@@ -35,7 +35,7 @@ char path[PATH_BUFFER_SIZE];
 
 size_t COUNT_LEN = strlen("count ");
 
-LibWCMemory* memo = NULL;
+LibWCData* memo = NULL;
 bool is_initialised = false;
 
 regex_t rINIT;
@@ -121,20 +121,20 @@ void react_to_command() {
 
     switch (id) {
     case INIT:
-        LibWCMemory_init(memo, num_input);
+        LibWCData_init(memo, num_input);
         is_initialised = true;
         break;
     case COUNT:
-        LibWCMemory_push(memo, path);
+        LibWCData_push(memo, path);
         break;
     case SHOW:
-        puts(LibWCMemory_get(memo, num_input));
+        puts(LibWCData_get(memo, num_input));
         break;
     case DELETE:
-        LibWCMemory_pop(memo, num_input);
+        LibWCData_pop(memo, num_input);
         break;
     case DESTROY:
-        LibWCMemory_destruct(memo);
+        LibWCData_destruct(memo);
         is_initialised = false;
         break;
     case EXIT:
@@ -158,7 +158,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    memo = malloc(sizeof(LibWCMemory));
+    memo = malloc(sizeof(LibWCData));
 
     struct timespec timespec_buff_start, timespec_buff_end;
     struct tms tms_buff_start, tms_buff_end;

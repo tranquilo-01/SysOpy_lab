@@ -50,7 +50,6 @@ char* LibWCData_get(LibWCData* LibWCData, size_t index) {
 // funkcja usuwajaca dane z podanego indeksu
 void LibWCData_pop(LibWCData* LibWCData, size_t index) {
     if (LibWCData_range_check(LibWCData, index)) {
-        free(LibWCData->arr[index]);
         int i = index+1;
         while (i<LibWCData->element_count)
         {
