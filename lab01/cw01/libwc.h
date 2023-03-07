@@ -10,7 +10,6 @@
 
 typedef struct {
     char** arr;
-    bool* active;
     size_t top;
     size_t size;
 } LibWCData;

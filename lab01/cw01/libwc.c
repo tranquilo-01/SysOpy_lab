@@ -6,7 +6,6 @@ char command[LIBWC_COMMAND_BUFF_SIZE] = "";
 LibWCData LibWCData_create(size_t size) {
     return (LibWCData) {
         .arr = calloc(size, sizeof(char*)),
-        .active = calloc(size, sizeof(bool)),
         .top = 0,
         .size = size,
     };
@@ -15,7 +14,6 @@ LibWCData LibWCData_create(size_t size) {
 // inicjalizacja podanej struktury
 void LibWCData_init(LibWCData* LibWCData, size_t size) {
     LibWCData->arr = calloc(size, sizeof(char*));
-    LibWCData->active = calloc(size, sizeof(bool));
     LibWCData->top = 0;
     LibWCData->size = size;
 }
@@ -23,17 +21,14 @@ void LibWCData_init(LibWCData* LibWCData, size_t size) {
 // wyczyszczenie calej struktury
 void LibWCData_clear(LibWCData* LibWCData) {
     for (size_t i = 0; i < LibWCData->top; i++)
-        if (LibWCData->active[i])
-            free(LibWCData->arr[i]);
+        free(LibWCData->arr[i]);
     LibWCData->top = 0;
-    memset(LibWCData->active, false, sizeof(bool)*(LibWCData->size));
 }
 
 // destrukcja struktury
 void LibWCData_destruct(LibWCData* LibWCData) {
     LibWCData_clear(LibWCData);
     free(LibWCData->arr);
-    free(LibWCData->active);
 }
 
 // funkcja pomocnicza sprawdzajaca czy podany indeks jest w tablicy
@@ -41,10 +36,6 @@ bool LibWCData_range_check(LibWCData* LibWCData, size_t index) {
     if (LibWCData->top <= index) {
         fprintf(stderr, "[LIB WC] INDEX OUT OF RANGE\n");
         return false; 
-    }
-    if (!LibWCData->active[index]) {
-        fprintf(stderr, "[LIB WC] INDEX ALREADY REMOVED\n");
-        return false;
     }
     return true;
 }
@@ -60,7 +51,14 @@ char* LibWCData_get(LibWCData* LibWCData, size_t index) {
 void LibWCData_pop(LibWCData* LibWCData, size_t index) {
     if (LibWCData_range_check(LibWCData, index)) {
         free(LibWCData->arr[index]);
-        LibWCData->active[index] = false;
+        int i = index+1;
+        while (i<LibWCData->top)
+        {
+            LibWCData->arr[i-1]=LibWCData->arr[i];
+            i++;
+        }
+        free(LibWCData->arr[i-1]);
+        LibWCData->top--;       
     }
 }
 
@@ -107,7 +105,6 @@ void LibWCData_push(LibWCData* LibWCData, char* input_filename) {
 
     if (LibWCData->top < LibWCData->size) {
         LibWCData->arr[LibWCData->top] = wc_output;
-        LibWCData->active[LibWCData->top] = true;
         (LibWCData->top)++;
     } else {
         fprintf(stderr, "[LIB WC] NOT ENOUGH MEMORY\n");
