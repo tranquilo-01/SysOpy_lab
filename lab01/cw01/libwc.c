@@ -2,8 +2,9 @@
 
 char command[LIBWC_COMMAND_BUFF_SIZE] = "";
 
-LibWCMemory LibWCMemory_create(size_t size) {
-    return (LibWCMemory) {
+// stworzenie nowej struktury
+LibWCData LibWCData_create(size_t size) {
+    return (LibWCData) {
         .arr = calloc(size, sizeof(char*)),
         .active = calloc(size, sizeof(bool)),
         .top = 0,
@@ -11,52 +12,59 @@ LibWCMemory LibWCMemory_create(size_t size) {
     };
 }
 
-void LibWCMemory_init(LibWCMemory* LibWCMemory, size_t size) {
-    LibWCMemory->arr = calloc(size, sizeof(char*));
-    LibWCMemory->active = calloc(size, sizeof(bool));
-    LibWCMemory->top = 0;
-    LibWCMemory->size = size;
+// inicjalizacja podanej struktury
+void LibWCData_init(LibWCData* LibWCData, size_t size) {
+    LibWCData->arr = calloc(size, sizeof(char*));
+    LibWCData->active = calloc(size, sizeof(bool));
+    LibWCData->top = 0;
+    LibWCData->size = size;
 }
 
-void LibWCMemory_clear(LibWCMemory* LibWCMemory) {
-    for (size_t i = 0; i < LibWCMemory->top; i++)
-        if (LibWCMemory->active[i])
-            free(LibWCMemory->arr[i]);
-    LibWCMemory->top = 0;
-    memset(LibWCMemory->active, false, sizeof(bool)*(LibWCMemory->size));
+// wyczyszczenie calej struktury
+void LibWCData_clear(LibWCData* LibWCData) {
+    for (size_t i = 0; i < LibWCData->top; i++)
+        if (LibWCData->active[i])
+            free(LibWCData->arr[i]);
+    LibWCData->top = 0;
+    memset(LibWCData->active, false, sizeof(bool)*(LibWCData->size));
 }
 
-void LibWCMemory_destruct(LibWCMemory* LibWCMemory) {
-    LibWCMemory_clear(LibWCMemory);
-    free(LibWCMemory->arr);
-    free(LibWCMemory->active);
+// destrukcja struktury
+void LibWCData_destruct(LibWCData* LibWCData) {
+    LibWCData_clear(LibWCData);
+    free(LibWCData->arr);
+    free(LibWCData->active);
 }
 
-bool LibWCMemory_range_check(LibWCMemory* LibWCMemory, size_t index) {
-    if (LibWCMemory->top <= index) {
+// funkcja pomocnicza sprawdzajaca czy podany indeks jest w tablicy
+bool LibWCData_range_check(LibWCData* LibWCData, size_t index) {
+    if (LibWCData->top <= index) {
         fprintf(stderr, "[LIB WC] INDEX OUT OF RANGE\n");
         return false; 
     }
-    if (!LibWCMemory->active[index]) {
+    if (!LibWCData->active[index]) {
         fprintf(stderr, "[LIB WC] INDEX ALREADY REMOVED\n");
         return false;
     }
     return true;
 }
 
-char* LibWCMemory_get(LibWCMemory* LibWCMemory, size_t index) {
-    if (LibWCMemory_range_check(LibWCMemory, index))
-        return LibWCMemory->arr[index];
+// funkcja zwracajaca dane spod podanego indeksu
+char* LibWCData_get(LibWCData* LibWCData, size_t index) {
+    if (LibWCData_range_check(LibWCData, index))
+        return LibWCData->arr[index];
     return "";
 }
 
-void LibWCMemory_pop(LibWCMemory* LibWCMemory, size_t index) {
-    if (LibWCMemory_range_check(LibWCMemory, index)) {
-        free(LibWCMemory->arr[index]);
-        LibWCMemory->active[index] = false;
+// funkcja usuwajaca dane z podanego indeksu
+void LibWCData_pop(LibWCData* LibWCData, size_t index) {
+    if (LibWCData_range_check(LibWCData, index)) {
+        free(LibWCData->arr[index]);
+        LibWCData->active[index] = false;
     }
 }
 
+// get file size
 long get_file_size(FILE* file) {
     fseek(file, 0, SEEK_END);
     long size = ftell(file);
@@ -64,6 +72,7 @@ long get_file_size(FILE* file) {
     return size;
 }
 
+// funkcja laduje plik do buforu (char*)
 char* get_file_content(char* filename) {
     FILE* file = fopen(filename, "r");
     size_t size = get_file_size(file);
@@ -73,7 +82,9 @@ char* get_file_content(char* filename) {
     return buff;
 }
 
-void LibWCMemory_push(LibWCMemory* LibWCMemory, char* input_filename) {
+// mieso biblioteki
+// bierze plik, robi wc, zapisuje do tmp, czyta z tmp i wrzuca do struktury
+void LibWCData_push(LibWCData* LibWCData, char* input_filename) {
     char tmp_filename[] = "/tmp/wclib_XXXXXX";
     int tmp_file = mkstemp(tmp_filename);
 
@@ -94,10 +105,10 @@ void LibWCMemory_push(LibWCMemory* LibWCMemory, char* input_filename) {
     snprintf(command, LIBWC_COMMAND_BUFF_SIZE, "rm -f '%s' 2>/dev/null", tmp_filename);
     system(command);
 
-    if (LibWCMemory->top < LibWCMemory->size) {
-        LibWCMemory->arr[LibWCMemory->top] = wc_output;
-        LibWCMemory->active[LibWCMemory->top] = true;
-        (LibWCMemory->top)++;
+    if (LibWCData->top < LibWCData->size) {
+        LibWCData->arr[LibWCData->top] = wc_output;
+        LibWCData->active[LibWCData->top] = true;
+        (LibWCData->top)++;
     } else {
         fprintf(stderr, "[LIB WC] NOT ENOUGH MEMORY\n");
     }

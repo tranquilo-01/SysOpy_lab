@@ -13,14 +13,14 @@ typedef struct {
     bool* active;
     size_t top;
     size_t size;
-} LibWCMemory;
+} LibWCData;
 
-LibWCMemory (*LibWCMemory_create)(size_t);
-void (*LibWCMemory_init)(LibWCMemory*, size_t);
-void (*LibWCMemory_clear)(LibWCMemory*);
-void (*LibWCMemory_destruct)(LibWCMemory*);
-char* (*LibWCMemory_get)(LibWCMemory*, size_t);
-void (*LibWCMemory_pop)(LibWCMemory*, size_t);
-void (*LibWCMemory_push)(LibWCMemory*, char* );
+LibWCData (*LibWCData_create)(size_t);
+void (*LibWCData_init)(LibWCData*, size_t);
+void (*LibWCData_clear)(LibWCData*);
+void (*LibWCData_destruct)(LibWCData*);
+char* (*LibWCData_get)(LibWCData*, size_t);
+void (*LibWCData_pop)(LibWCData*, size_t);
+void (*LibWCData_push)(LibWCData*, char* );
 
 #endif

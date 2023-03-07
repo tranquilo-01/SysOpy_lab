@@ -13,20 +13,20 @@ typedef struct {
     bool* active;
     size_t top;
     size_t size;
-} LibWCMemory;
+} LibWCData;
 
-LibWCMemory LibWCMemory_create(size_t size);
+LibWCData LibWCData_create(size_t size);
 
-void LibWCMemory_init(LibWCMemory* LibWCMemory, size_t size);
+void LibWCData_init(LibWCData* LibWCData, size_t size);
 
-void LibWCMemory_clear(LibWCMemory* LibWCMemory);
+void LibWCData_clear(LibWCData* LibWCData);
 
-void LibWCMemory_destruct(LibWCMemory* LibWCMemory);
+void LibWCData_destruct(LibWCData* LibWCData);
 
-char* LibWCMemory_get(LibWCMemory* LibWCMemory, size_t index);
+char* LibWCData_get(LibWCData* LibWCData, size_t index);
 
-void LibWCMemory_pop(LibWCMemory* LibWCMemory, size_t index);
+void LibWCData_pop(LibWCData* LibWCData, size_t index);
 
-void LibWCMemory_push(LibWCMemory* LibWCMemory, char* input_filename);
+void LibWCData_push(LibWCData* LibWCData, char* input_filename);
 
 #endif
