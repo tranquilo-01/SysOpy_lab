@@ -6,7 +6,7 @@ char command[LIBWC_COMMAND_BUFF_SIZE] = "";
 LibWCData LibWCData_create(size_t size) {
     return (LibWCData) {
         .arr = calloc(size, sizeof(char*)),
-        .top = 0,
+        .element_count = 0,
         .size = size,
     };
 }
@@ -14,15 +14,15 @@ LibWCData LibWCData_create(size_t size) {
 // inicjalizacja podanej struktury
 void LibWCData_init(LibWCData* LibWCData, size_t size) {
     LibWCData->arr = calloc(size, sizeof(char*));
-    LibWCData->top = 0;
+    LibWCData->element_count = 0;
     LibWCData->size = size;
 }
 
 // wyczyszczenie calej struktury
 void LibWCData_clear(LibWCData* LibWCData) {
-    for (size_t i = 0; i < LibWCData->top; i++)
+    for (size_t i = 0; i < LibWCData->element_count; i++)
         free(LibWCData->arr[i]);
-    LibWCData->top = 0;
+    LibWCData->element_count = 0;
 }
 
 // destrukcja struktury
@@ -33,7 +33,7 @@ void LibWCData_destruct(LibWCData* LibWCData) {
 
 // funkcja pomocnicza sprawdzajaca czy podany indeks jest w tablicy
 bool LibWCData_range_check(LibWCData* LibWCData, size_t index) {
-    if (LibWCData->top <= index) {
+    if (LibWCData->element_count <= index) {
         fprintf(stderr, "[LIB WC] INDEX OUT OF RANGE\n");
         return false; 
     }
@@ -52,13 +52,13 @@ void LibWCData_pop(LibWCData* LibWCData, size_t index) {
     if (LibWCData_range_check(LibWCData, index)) {
         free(LibWCData->arr[index]);
         int i = index+1;
-        while (i<LibWCData->top)
+        while (i<LibWCData->element_count)
         {
             LibWCData->arr[i-1]=LibWCData->arr[i];
             i++;
         }
         free(LibWCData->arr[i-1]);
-        LibWCData->top--;       
+        LibWCData->element_count--;       
     }
 }
 
@@ -103,9 +103,9 @@ void LibWCData_push(LibWCData* LibWCData, char* input_filename) {
     snprintf(command, LIBWC_COMMAND_BUFF_SIZE, "rm -f '%s' 2>/dev/null", tmp_filename);
     system(command);
 
-    if (LibWCData->top < LibWCData->size) {
-        LibWCData->arr[LibWCData->top] = wc_output;
-        (LibWCData->top)++;
+    if (LibWCData->element_count < LibWCData->size) {
+        LibWCData->arr[LibWCData->element_count] = wc_output;
+        (LibWCData->element_count)++;
     } else {
         fprintf(stderr, "[LIB WC] NOT ENOUGH MEMORY\n");
     }
