@@ -56,7 +56,6 @@ void LibWCData_pop(LibWCData* LibWCData, size_t index) {
             LibWCData->arr[i-1]=LibWCData->arr[i];
             i++;
         }
-        free(LibWCData->arr[i-1]);
         LibWCData->element_count--;       
     }
 }

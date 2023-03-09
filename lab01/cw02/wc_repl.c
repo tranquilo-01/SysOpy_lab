@@ -81,6 +81,7 @@ void parse_input(char* input, size_t input_len) {
     } else if (regexec(&rCOUNT, input, 0, NULL, 0) == 0) {
         id = COUNT;
         input += COUNT_LEN;
+        path[0] = '\0';
         size_t newline_position = strcspn(input, "\n");
         strncpy(path, input, min(newline_position, PATH_BUFFER_SIZE));
     } else if (regexec(&rSHOW, input, 0, NULL, 0) == 0) {
@@ -179,8 +180,6 @@ int main(int argc, char** argv) {
 
         parse_input(line, line_len);
         fflush(NULL);
-
-        // CLOCK REALTIME jest definiowane gdzies pozniej
 
         clock_gettime(CLOCK_REALTIME, &timespec_buff_start);
         times(&tms_buff_start);
