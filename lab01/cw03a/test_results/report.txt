@@ -1,0 +1,1 @@
+czasy pomiarw wypadaja bardzo roznie, jednak najczesciej jest to static<shared<dynamic

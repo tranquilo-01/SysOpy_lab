@@ -1,0 +1,4 @@
+czasy pomiarw wypadaja bardzo roznie, jednak najczesciej jest to static<shared<dynamic
+w przypadku flag optymalizacji zazwyczaj im wyzszy numer tym wiecej czasu zajmowalo wykonanie kodu
+mimo tego czasami dla ktorejs z flag czas byl wyraznie nizszy niz wynikalo by to z opisanego wyzej trendu
+trendu tego nie dalo sie zaobserwowac dla statycznego linkowania biblioteki
