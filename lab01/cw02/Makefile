@@ -1,9 +1,4 @@
-SHELL=/bin/bash
-CC=gcc
-CFLAGS=-Wall
-LIB=libwc
-REPL=wc_repl.c
-BINS=wc_repl.c dllmanager.h
+COMPILATION_OPTIONS=-Wall
 
 all:
 	make lib_static
@@ -12,33 +7,46 @@ all:
 	make exe_shared
 	make exe_dlopen
 
+lib_static: libwc.c
+	gcc $(COMPILATION_OPTIONS) $(OPTIMALIZATION) -c libwc.c
+	ar cr libwc$(SUFFIX).a libwc.o
+
+lib_shared: libwc.c
+	gcc $(COMPILATION_OPTIONS) $(OPTIMALIZATION) -c -fPIC libwc.c
+	gcc $(COMPILATION_OPTIONS) $(OPTIMALIZATION) -shared -o libwc.so libwc.o
+
+exe_static: libwc.c wc_repl.c dllmanager.h
+	gcc $(COMPILATION_OPTIONS) $(OPTIMALIZATION) wc_repl.c -o wc_repl_static.exe -L . libwc.a
+
+exe_shared: libwc.c wc_repl.c dllmanager.h
+	gcc $(COMPILATION_OPTIONS) $(OPTIMALIZATION) wc_repl.c -o wc_repl_shared.exe -L . libwc.so
+
+exe_dlopen: libwc.c wc_repl.c dllmanager.h
+	gcc $(COMPILATION_OPTIONS) $(OPTIMALIZATION) wc_repl.c -o wc_repl_dlopen.exe -ldl -D USE_DLL
+
+clean:
+	rm -f *.o *.gch *.a *.so *.exe test.in
+
 o:
-	make all OPT_FLAGS="-O"
+	make all OPTIMALIZATION="-O"
 
 o0:
-	make all OPT_FLAGS="-O0"
+	make all OPTIMALIZATION="-O0"
 
 o1:
-	make all OPT_FLAGS="-O1"
+	make all OPTIMALIZATION="-O1"
 
 o2:
-	make all OPT_FLAGS="-O2"
+	make all OPTIMALIZATION="-O2"
 
 o3:
-	make all OPT_FLAGS="-O3"
+	make all OPTIMALIZATION="-O3"
 
 os:
-	make all OPT_FLAGS="-Os"
+	make all OPTIMALIZATION="-Os"
 
-test:
-	sudo mv libwc.so /usr/lib
-	make test_create
-	./wc_repl_static.exe < test.in > results_static_$(O_SUFFIX).txt 2>/dev/null
-	./wc_repl_shared.exe < test.in > results_shared_$(O_SUFFIX).txt 2>/dev/null
-	./wc_repl_dlopen.exe < test.in > results_dynamic_$(O_SUFFIX).txt 2>/dev/null
-
-test_create:
-	echo "init 1000" > test.in
+create_test_in:
+	echo "init 100" > test.in
 
 	(ls -p | grep -v / | sed 's/^/count /') >> test.in
 
@@ -47,10 +55,19 @@ test_create:
 	echo "show 2" >> test.in
 
 	echo "delete 1" >> test.in
+	echo "show 1" >> test.in
 	echo "destroy" >> test.in 
 	echo "exit" >> test.in
 
+test:
+	sudo mv libwc.so /usr/lib
+	make create_test_in
+	./wc_repl_static.exe < test.in > test_results/results_static_$(O_SUFFIX).txt 2>/dev/null
+	./wc_repl_shared.exe < test.in > test_results/results_shared_$(O_SUFFIX).txt 2>/dev/null
+	./wc_repl_dlopen.exe < test.in > test_results/results_dynamic_$(O_SUFFIX).txt 2>/dev/null
+
 report:
+	mkdir test_results
 	sudo ls > /dev/null
 	make o
 	make test O_SUFFIX="O"
@@ -67,22 +84,3 @@ report:
 	make o3
 	rm -f test.in
 
-lib_static: $(LIB).c
-	$(CC) $(CFLAGS) $(OPT_FLAGS) -c $(LIB).c
-	ar cr $(LIB)$(SUFFIX).a $(LIB).o
-
-lib_shared: $(LIB).c
-	$(CC) $(CFLAGS) $(OPT_FLAGS) -c -fPIC $(LIB).c
-	$(CC) $(CFLAGS) $(OPT_FLAGS) -shared -o $(LIB).so $(LIB).o
-
-exe_static: $(LIB).c $(BINS)
-	$(CC) $(CFLAGS) $(OPT_FLAGS) $(REPL) -o wc_repl_static.exe -L . $(LIB).a
-
-exe_shared: $(LIB).c $(BINS)
-	$(CC) $(CFLAGS) $(OPT_FLAGS) $(REPL) -o wc_repl_shared.exe -L . $(LIB).so
-
-exe_dlopen: $(LIB).c $(BINS)
-	$(CC) $(CFLAGS) $(OPT_FLAGS) $(REPL) -o wc_repl_dlopen.exe -ldl -D USE_DLL
-
-clean:
-	rm -f *.o *.gch *.a *.so *.exe test.in *.txt

@@ -1,6 +1,7 @@
 #include "libwc.h"
 
 char command[MAX_COMMAND_SIZE] = "";
+int a;
 
 // stworzenie nowej struktury
 LibWCData LibWCData_create(size_t size) {
@@ -70,7 +71,7 @@ char* get_file_content(char* filename) {
     rewind(file);
 
     char* content = calloc(size, sizeof(char));
-    fread(content, sizeof(char), size, file);
+    a = fread(content, sizeof(char), size, file);
     fclose(file);
     return content;
 }
@@ -89,7 +90,7 @@ void LibWCData_add(LibWCData* LibWCData, char* input_filename) {
 
     // wywolanie komendy wc na pliku i zapis wyniku do tmp
     snprintf(command, MAX_COMMAND_SIZE, "wc '%s' 1> '%s' 2>/dev/null", input_filename, tmp_filename);
-    system(command);
+    a = system(command);
     
     // ladowanie danych z tmp
     char* wc_output = get_file_content(tmp_filename);
@@ -100,7 +101,7 @@ void LibWCData_add(LibWCData* LibWCData, char* input_filename) {
 
     // usuwanie pliku tmp
     snprintf(command, MAX_COMMAND_SIZE, "rm -f '%s' 2>/dev/null", tmp_filename);
-    system(command);
+    a = system(command);
 
     // zapisanie wyniku dzialania komendy do tablicy w strukturze
     if (LibWCData->element_count < LibWCData->size) {

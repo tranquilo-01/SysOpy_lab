@@ -6,7 +6,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define LIBWC_COMMAND_BUFF_SIZE 2048
+#define MAX_COMMAND_SIZE 2048
 
 typedef struct {
     char** arr;

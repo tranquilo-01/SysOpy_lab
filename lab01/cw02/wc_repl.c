@@ -1,5 +1,5 @@
 #ifdef USE_DLL
-    #include "libwc_so.h"
+    #include "libwc.so.h"
 #else
     #include "libwc.h"
 #endif
@@ -15,6 +15,8 @@
 #define ANSI_COLOR_GREEN "\x1b[32m"
 #define ANSI_COLOR_RESET "\x1b[0m"
 #define ANSI_COLOR_BOLD  "\x1b[1m"
+#define ANSI_COLOR_RED "\x1b[31m"
+
 
 typedef enum {
     EXIT,
@@ -24,43 +26,32 @@ typedef enum {
     SHOW,
     DELETE,
     DESTROY,
-} COMMAND_ID;
+} COMMAND;
+
+LibWCData* data = NULL;
 
 bool running = true;
-int _;
-
-COMMAND_ID id;
+int b;
+COMMAND id;
 int num_input;
 char path[MAX_PATH_SIZE];
 
-size_t COUNT_LEN = strlen("count ");
-
-LibWCData* data = NULL;
 bool is_initialised = false;
 
+regex_t rEXIT;
 regex_t rINIT;
 regex_t rCOUNT;
 regex_t rSHOW;
 regex_t rDELETE;
 regex_t rDESTROY;
-regex_t rEXIT;
 
-void compile_regex() {
+void regex_compile() {
+    regcomp(&rEXIT, "exit", 0);
     regcomp(&rINIT, "init [0-9][0-9]*", 0);
     regcomp(&rCOUNT, "count ..*", 0);
     regcomp(&rSHOW, "show [0-9][0-9]*", 0);
     regcomp(&rDELETE, "delete [0-9][0-9]*", 0);
     regcomp(&rDESTROY, "destroy", 0);
-    regcomp(&rEXIT, "exit", 0);
-}
-
-bool is_whitespace(const char *s) {
-  while (*s != '\0') {
-    if (!isspace((unsigned char)*s))
-      return false;
-    s++;
-  }
-  return true;
 }
 
 size_t min(size_t a, size_t b) {
@@ -73,7 +64,7 @@ void parse_input(char* input, size_t input_len) {
         sscanf(input, "init %d", &num_input);
     } else if (regexec(&rCOUNT, input, 0, NULL, 0) == 0) {
         id = COUNT;
-        input += COUNT_LEN;
+        input += strlen("count ");;
         memset(path, '\0', sizeof(path));
         size_t newline_position = strcspn(input, "\n");
         strncpy(path, input, min(newline_position, MAX_PATH_SIZE));
@@ -94,22 +85,22 @@ void parse_input(char* input, size_t input_len) {
     if ((id != INVALID) && (id != DELETE) && (id != COUNT)) {
         if (num_input < 0) {
             id = INVALID;
-            fprintf(stderr, ANSI_COLOR_RED  ANSI_COLOR_BOLD "ERROR: WCLIB: EXPECTED A POSITIVE ARGUMENT\n"ANSI_COLOR_RESET);
+            fprintf(stderr, ANSI_COLOR_RED ANSI_COLOR_BOLD "ERROR: WCLIB: EXPECTED A POSITIVE ARGUMENT\n"ANSI_COLOR_RESET);
         } else if ((num_input < 1) && (id == INVALID)) {
             id = INVALID;
-            fprintf(stderr, ANSI_COLOR_RED  ANSI_COLOR_BOLD "ERROR: WCLIB: SIZE HAS TO BE GREATER THAN 0\n"ANSI_COLOR_RESET);
+            fprintf(stderr, ANSI_COLOR_RED ANSI_COLOR_BOLD "ERROR: WCLIB: SIZE HAS TO BE GREATER THAN 0\n"ANSI_COLOR_RESET);
         }
     }
 }
 
-void react_to_command() {
+void execute_command() {
     if ((id > INIT) && (!is_initialised)) {
-        fprintf(stderr, ANSI_COLOR_RED  ANSI_COLOR_BOLD "ERROR: RUN 'init {size}' FIRST\n"ANSI_COLOR_RESET);
+        fprintf(stderr, ANSI_COLOR_RED ANSI_COLOR_BOLD "ERROR: RUN 'init {size}' FIRST\n"ANSI_COLOR_RESET);
         return;
     }
 
     if ((id == INIT) && is_initialised) {
-        fprintf(stderr, ANSI_COLOR_RED  ANSI_COLOR_BOLD "ERROR: WCLIB already initialised\n"ANSI_COLOR_RESET);
+        fprintf(stderr, ANSI_COLOR_RED ANSI_COLOR_BOLD "ERROR: WCLIB already initialised\n"ANSI_COLOR_RESET);
         return;
     }
 
@@ -135,7 +126,7 @@ void react_to_command() {
         running = false;
         break;
     case INVALID:
-        fprintf(stderr, ANSI_COLOR_RED  ANSI_COLOR_BOLD "ERROR: INVALID COMMAND, TRY INSTEAD:\n"ANSI_COLOR_RESET);
+        fprintf(stderr, ANSI_COLOR_RED ANSI_COLOR_BOLD "ERROR: INVALID COMMAND, TRY INSTEAD:\n"ANSI_COLOR_RESET);
         fprintf(stderr, "init {size > 0}\n");
         fprintf(stderr, "count {path}\n");
         fprintf(stderr, "show {index >= 0}\n");
@@ -144,9 +135,19 @@ void react_to_command() {
     }
 }
 
+bool is_whitespace(const char *s) {
+  while (*s != '\0') {
+    if (!isspace((unsigned char)*s))
+      return false;
+    s++;
+  }
+  return true;
+}
+
+
 int main(int argc, char** argv) {
     load_dll_symbols("libwc.so");
-    compile_regex();
+    regex_compile();
 
     data = malloc(sizeof(LibWCData));
 
@@ -159,7 +160,7 @@ int main(int argc, char** argv) {
         char* line = NULL;
         size_t line_len;
 
-        _ = getline(&line, &line_len, stdin);
+        b = getline(&line, &line_len, stdin);
         fflush(NULL);
 
         if (is_whitespace(line)) {
@@ -172,7 +173,7 @@ int main(int argc, char** argv) {
 
         clock_gettime(CLOCK_REALTIME, &timespec_buff_start);
         times(&tms_buff_start);
-        react_to_command();
+        execute_command();
         clock_gettime(CLOCK_REALTIME, &timespec_buff_end);
         times(&tms_buff_end);
         fflush(NULL);
