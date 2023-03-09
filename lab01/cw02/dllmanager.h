@@ -12,10 +12,10 @@ char* _dll_symbol_names[] = {
     "LibWCData",
     "LibWCData_init",
     "LibWCData_clear",
-    "LibWCData_destruct",
+    "LibWCData_destroy",
     "LibWCData_get",
-    "LibWCData_pop",
-    "LibWCData_push",
+    "LibWCData_delete",
+    "LibWCData_add",
 };
 
 void load_dll_symbols(const char* filepath) {
@@ -30,10 +30,10 @@ void load_dll_symbols(const char* filepath) {
     *(void **) (&LibWCData_create) = dlsym(handle,"LibWCData_create");
     *(void **) (&LibWCData_init) = dlsym(handle,"LibWCData_init");
     *(void **) (&LibWCData_clear) = dlsym(handle,"LibWCData_clear");
-    *(void **) (&LibWCData_destruct) = dlsym(handle,"LibWCData_destruct");
+    *(void **) (&LibWCData_destroy) = dlsym(handle,"LibWCData_destroy");
     *(void **) (&LibWCData_get) = dlsym(handle,"LibWCData_get");
-    *(void **) (&LibWCData_pop) = dlsym(handle,"LibWCData_pop");
-    *(void **) (&LibWCData_push) = dlsym(handle,"LibWCData_push");
+    *(void **) (&LibWCData_delete) = dlsym(handle,"LibWCData_delete");
+    *(void **) (&LibWCData_add) = dlsym(handle,"LibWCData_add");
 }
 
 #else

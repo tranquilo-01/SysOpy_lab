@@ -17,9 +17,9 @@ typedef struct {
 LibWCData (*LibWCData_create)(size_t);
 void (*LibWCData_init)(LibWCData*, size_t);
 void (*LibWCData_clear)(LibWCData*);
-void (*LibWCData_destruct)(LibWCData*);
+void (*LibWCData_destroy)(LibWCData*);
 char* (*LibWCData_get)(LibWCData*, size_t);
-void (*LibWCData_pop)(LibWCData*, size_t);
-void (*LibWCData_push)(LibWCData*, char* );
+void (*LibWCData_delete)(LibWCData*, size_t);
+void (*LibWCData_add)(LibWCData*, char* );
 
 #endif

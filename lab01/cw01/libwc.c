@@ -1,6 +1,6 @@
 #include "libwc.h"
 
-char command[LIBWC_COMMAND_BUFF_SIZE] = "";
+char command[MAX_COMMAND_SIZE] = "";
 
 // stworzenie nowej struktury
 LibWCData LibWCData_create(size_t size) {
@@ -26,13 +26,13 @@ void LibWCData_clear(LibWCData* LibWCData) {
 }
 
 // destrukcja struktury
-void LibWCData_destruct(LibWCData* LibWCData) {
+void LibWCData_destroy(LibWCData* LibWCData) {
     LibWCData_clear(LibWCData);
     free(LibWCData->arr);
 }
 
 // funkcja pomocnicza sprawdzajaca czy podany indeks jest w tablicy
-bool LibWCData_range_check(LibWCData* LibWCData, size_t index) {
+bool LibWCData_is_in_range(LibWCData* LibWCData, size_t index) {
     if (LibWCData->element_count <= index) {
         fprintf(stderr, "[LIB WC] INDEX OUT OF RANGE\n");
         return false; 
@@ -42,14 +42,14 @@ bool LibWCData_range_check(LibWCData* LibWCData, size_t index) {
 
 // funkcja zwracajaca dane spod podanego indeksu
 char* LibWCData_get(LibWCData* LibWCData, size_t index) {
-    if (LibWCData_range_check(LibWCData, index))
+    if (LibWCData_is_in_range(LibWCData, index))
         return LibWCData->arr[index];
     return "";
 }
 
 // funkcja usuwajaca dane z podanego indeksu
-void LibWCData_pop(LibWCData* LibWCData, size_t index) {
-    if (LibWCData_range_check(LibWCData, index)) {
+void LibWCData_delete(LibWCData* LibWCData, size_t index) {
+    if (LibWCData_is_in_range(LibWCData, index)) {
         int i = index+1;
         while (i<LibWCData->element_count)
         {
@@ -81,7 +81,7 @@ char* get_file_content(char* filename) {
 
 // mieso biblioteki
 // bierze plik, robi wc, zapisuje do tmp, czyta z tmp i wrzuca do struktury
-void LibWCData_push(LibWCData* LibWCData, char* input_filename) {
+void LibWCData_add(LibWCData* LibWCData, char* input_filename) {
     char tmp_filename[] = "/tmp/wclib_XXXXXX";
     int tmp_file = mkstemp(tmp_filename);
 
@@ -90,7 +90,7 @@ void LibWCData_push(LibWCData* LibWCData, char* input_filename) {
         return;
     }
 
-    snprintf(command, LIBWC_COMMAND_BUFF_SIZE, "wc '%s' 1> '%s' 2>/dev/null", input_filename, tmp_filename);
+    snprintf(command, MAX_COMMAND_SIZE, "wc '%s' 1> '%s' 2>/dev/null", input_filename, tmp_filename);
     system(command);
     
     char* wc_output = get_file_content(tmp_filename);
@@ -99,7 +99,7 @@ void LibWCData_push(LibWCData* LibWCData, char* input_filename) {
         return;
     }
 
-    snprintf(command, LIBWC_COMMAND_BUFF_SIZE, "rm -f '%s' 2>/dev/null", tmp_filename);
+    snprintf(command, MAX_COMMAND_SIZE, "rm -f '%s' 2>/dev/null", tmp_filename);
     system(command);
 
     if (LibWCData->element_count < LibWCData->size) {

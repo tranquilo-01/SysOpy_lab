@@ -1,6 +1,6 @@
 #include "libwc.h"
 
-char command[LIBWC_COMMAND_BUFF_SIZE] = "";
+char command[MAX_COMMAND_SIZE] = "";
 
 // stworzenie nowej struktury
 LibWCData LibWCData_create(size_t size) {
@@ -26,15 +26,15 @@ void LibWCData_clear(LibWCData* LibWCData) {
 }
 
 // destrukcja struktury
-void LibWCData_destruct(LibWCData* LibWCData) {
+void LibWCData_destroy(LibWCData* LibWCData) {
     LibWCData_clear(LibWCData);
     free(LibWCData->arr);
 }
 
 // funkcja pomocnicza sprawdzajaca czy podany indeks jest w tablicy
-bool LibWCData_range_check(LibWCData* LibWCData, size_t index) {
+bool LibWCData_is_in_range(LibWCData* LibWCData, size_t index) {
     if (LibWCData->element_count <= index) {
-        fprintf(stderr, "[LIB WC] INDEX OUT OF RANGE\n");
+        fprintf(stderr, ANSI_COLOR_RED  ANSI_COLOR_BOLD "ERROR: INDEX OUT OF RANGE\n" ANSI_COLOR_RESET);
         return false; 
     }
     return true;
@@ -42,14 +42,14 @@ bool LibWCData_range_check(LibWCData* LibWCData, size_t index) {
 
 // funkcja zwracajaca dane spod podanego indeksu
 char* LibWCData_get(LibWCData* LibWCData, size_t index) {
-    if (LibWCData_range_check(LibWCData, index))
+    if (LibWCData_is_in_range(LibWCData, index))
         return LibWCData->arr[index];
     return "";
 }
 
 // funkcja usuwajaca dane z podanego indeksu
-void LibWCData_pop(LibWCData* LibWCData, size_t index) {
-    if (LibWCData_range_check(LibWCData, index)) {
+void LibWCData_delete(LibWCData* LibWCData, size_t index) {
+    if (LibWCData_is_in_range(LibWCData, index)) {
         int i = index+1;
         while (i<LibWCData->element_count)
         {
@@ -60,51 +60,53 @@ void LibWCData_pop(LibWCData* LibWCData, size_t index) {
     }
 }
 
-// get file size
-long get_file_size(FILE* file) {
-    fseek(file, 0, SEEK_END);
-    long size = ftell(file);
-    fseek(file, 0, SEEK_SET);
-    return size;
-}
 
-// funkcja laduje plik do buforu (char*)
+// funkcja przyjmuje sciezke do pliku i zwraca jego zawartosc
 char* get_file_content(char* filename) {
     FILE* file = fopen(filename, "r");
-    size_t size = get_file_size(file);
-    char* buff = calloc(size, sizeof(char));
-    fread(buff, sizeof(char), size, file);
+
+    fseek(file, 0, SEEK_END);
+    size_t size = ftell(file);
+    rewind(file);
+
+    char* content = calloc(size, sizeof(char));
+    fread(content, sizeof(char), size, file);
     fclose(file);
-    return buff;
+    return content;
 }
 
-// mieso biblioteki
-// bierze plik, robi wc, zapisuje do tmp, czyta z tmp i wrzuca do struktury
-void LibWCData_push(LibWCData* LibWCData, char* input_filename) {
+//funkcja przyjmuje strukture LibWCData i sciezke do pliku
+// wykonuje operacje wc na pliku i jej wynik dodaje do tablicy w strukturze
+void LibWCData_add(LibWCData* LibWCData, char* input_filename) {
+    // tworzenie pliku tmp
     char tmp_filename[] = "/tmp/wclib_XXXXXX";
     int tmp_file = mkstemp(tmp_filename);
 
     if (tmp_file == 0) {
-        fprintf(stderr, "[LIB WC] FAILED TO CREATE A TEMPORARY FILE\n");
+        fprintf(stderr,ANSI_COLOR_RED  ANSI_COLOR_BOLD  "ERROR: FAILED TO CREATE A TEMPORARY FILE\n"ANSI_COLOR_RESET);
         return;
     }
 
-    snprintf(command, LIBWC_COMMAND_BUFF_SIZE, "wc '%s' 1> '%s' 2>/dev/null", input_filename, tmp_filename);
+    // wywolanie komendy wc na pliku i zapis wyniku do tmp
+    snprintf(command, MAX_COMMAND_SIZE, "wc '%s' 1> '%s' 2>/dev/null", input_filename, tmp_filename);
     system(command);
     
+    // ladowanie danych z tmp
     char* wc_output = get_file_content(tmp_filename);
     if (strlen(wc_output) == 0) {
-        fprintf(stderr, "[LIB WC] FAILED TO READ THE INPUT FILE (%s)\n", input_filename);
+        fprintf(stderr, ANSI_COLOR_RED  ANSI_COLOR_BOLD "ERROR: FAILED TO READ THE INPUT FILE (%s)\n"ANSI_COLOR_RESET, input_filename);
         return;
     }
 
-    snprintf(command, LIBWC_COMMAND_BUFF_SIZE, "rm -f '%s' 2>/dev/null", tmp_filename);
+    // usuwanie pliku tmp
+    snprintf(command, MAX_COMMAND_SIZE, "rm -f '%s' 2>/dev/null", tmp_filename);
     system(command);
 
+    // zapisanie wyniku dzialania komendy do tablicy w strukturze
     if (LibWCData->element_count < LibWCData->size) {
         LibWCData->arr[LibWCData->element_count] = wc_output;
         (LibWCData->element_count)++;
     } else {
-        fprintf(stderr, "[LIB WC] NOT ENOUGH MEMORY\n");
+        fprintf(stderr, ANSI_COLOR_RED  ANSI_COLOR_BOLD "ERROR: NOT ENOUGH MEMORY\n"ANSI_COLOR_RESET);
     }
 }

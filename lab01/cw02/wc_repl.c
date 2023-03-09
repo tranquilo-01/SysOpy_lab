@@ -11,7 +11,7 @@
 #include <time.h>
 #include <sys/times.h>
 
-#define PATH_BUFFER_SIZE 2048
+#define MAX_PATH_SIZE 2048
 #define ANSI_COLOR_GREEN "\x1b[32m"
 #define ANSI_COLOR_RESET "\x1b[0m"
 #define ANSI_COLOR_BOLD  "\x1b[1m"
@@ -31,11 +31,11 @@ int _;
 
 COMMAND_ID id;
 int num_input;
-char path[PATH_BUFFER_SIZE];
+char path[MAX_PATH_SIZE];
 
 size_t COUNT_LEN = strlen("count ");
 
-LibWCData* memo = NULL;
+LibWCData* data = NULL;
 bool is_initialised = false;
 
 regex_t rINIT;
@@ -45,20 +45,13 @@ regex_t rDELETE;
 regex_t rDESTROY;
 regex_t rEXIT;
 
-int compile_regex() {
-    int status = 0;
-    status += regcomp(&rINIT, "init [0-9][0-9]*", 0);
-    status *= 10;
-    status += regcomp(&rCOUNT, "count ..*", 0); // spij splodko aniolku
-    status *= 10;
-    status += regcomp(&rSHOW, "show [0-9][0-9]*", 0);
-    status *= 10;
-    status += regcomp(&rDELETE, "delete [0-9][0-9]*", 0);
-    status *= 10;
-    status += regcomp(&rDESTROY, "destroy", 0);
-    status *= 10;
-    status += regcomp(&rEXIT, "exit", 0);
-    return status;
+void compile_regex() {
+    regcomp(&rINIT, "init [0-9][0-9]*", 0);
+    regcomp(&rCOUNT, "count ..*", 0);
+    regcomp(&rSHOW, "show [0-9][0-9]*", 0);
+    regcomp(&rDELETE, "delete [0-9][0-9]*", 0);
+    regcomp(&rDESTROY, "destroy", 0);
+    regcomp(&rEXIT, "exit", 0);
 }
 
 bool is_whitespace(const char *s) {
@@ -81,9 +74,9 @@ void parse_input(char* input, size_t input_len) {
     } else if (regexec(&rCOUNT, input, 0, NULL, 0) == 0) {
         id = COUNT;
         input += COUNT_LEN;
-        path[0] = '\0';
+        memset(path, '\0', sizeof(path));
         size_t newline_position = strcspn(input, "\n");
-        strncpy(path, input, min(newline_position, PATH_BUFFER_SIZE));
+        strncpy(path, input, min(newline_position, MAX_PATH_SIZE));
     } else if (regexec(&rSHOW, input, 0, NULL, 0) == 0) {
         id = SHOW;
         sscanf(input, "show %d", &num_input);
@@ -101,71 +94,67 @@ void parse_input(char* input, size_t input_len) {
     if ((id != INVALID) && (id != DELETE) && (id != COUNT)) {
         if (num_input < 0) {
             id = INVALID;
-            fprintf(stderr, "[WC REPL] EXPECTED A POSITIVE ARGUMENT\n");
+            fprintf(stderr, ANSI_COLOR_RED  ANSI_COLOR_BOLD "ERROR: WCLIB: EXPECTED A POSITIVE ARGUMENT\n"ANSI_COLOR_RESET);
         } else if ((num_input < 1) && (id == INVALID)) {
             id = INVALID;
-            fprintf(stderr, "[WC REPL] SIZE HAS TO BE GREATER THAN 0\n");
+            fprintf(stderr, ANSI_COLOR_RED  ANSI_COLOR_BOLD "ERROR: WCLIB: SIZE HAS TO BE GREATER THAN 0\n"ANSI_COLOR_RESET);
         }
     }
 }
 
 void react_to_command() {
     if ((id > INIT) && (!is_initialised)) {
-        fprintf(stderr, "[WC REPL] RUN 'init {size}' FIRST\n");
+        fprintf(stderr, ANSI_COLOR_RED  ANSI_COLOR_BOLD "ERROR: RUN 'init {size}' FIRST\n"ANSI_COLOR_RESET);
         return;
     }
 
     if ((id == INIT) && is_initialised) {
-        fprintf(stderr, "[WC REPL] RUN 'destroy' BEFORE INITIALISING AGAIN\n");
+        fprintf(stderr, ANSI_COLOR_RED  ANSI_COLOR_BOLD "ERROR: WCLIB already initialised\n"ANSI_COLOR_RESET);
         return;
     }
 
     switch (id) {
     case INIT:
-        LibWCData_init(memo, num_input);
+        LibWCData_init(data, num_input);
         is_initialised = true;
         break;
     case COUNT:
-        LibWCData_push(memo, path);
+        LibWCData_add(data, path);
         break;
     case SHOW:
-        puts(LibWCData_get(memo, num_input));
+        puts(LibWCData_get(data, num_input));
         break;
     case DELETE:
-        LibWCData_pop(memo, num_input);
+        LibWCData_delete(data, num_input);
         break;
     case DESTROY:
-        LibWCData_destruct(memo);
+        LibWCData_destroy(data);
         is_initialised = false;
         break;
     case EXIT:
         running = false;
         break;
     case INVALID:
-        fprintf(stderr, "[WC REPL] INVALID COMMAND, TRY INSTEAD:\n");
-        fprintf(stderr, "[WC REPL] init {size > 0}\n");
-        fprintf(stderr, "[WC REPL] count {path}\n");
-        fprintf(stderr, "[WC REPL] show {index >= 0}\n");
-        fprintf(stderr, "[WC REPL] delete {index >= 0}\n");
-        fprintf(stderr, "[WC REPL] destroy\n");
+        fprintf(stderr, ANSI_COLOR_RED  ANSI_COLOR_BOLD "ERROR: INVALID COMMAND, TRY INSTEAD:\n"ANSI_COLOR_RESET);
+        fprintf(stderr, "init {size > 0}\n");
+        fprintf(stderr, "count {path}\n");
+        fprintf(stderr, "show {index >= 0}\n");
+        fprintf(stderr, "delete {index >= 0}\n");
+        fprintf(stderr, "destroy\n");
     }
 }
 
 int main(int argc, char** argv) {
     load_dll_symbols("libwc.so");
-    int regex_status = compile_regex();
-    if (regex_status) {
-        fprintf(stderr, "[WC REPL] REGEX COMPILATION FAIL (%i)\n", regex_status);
-        return 1;
-    }
+    compile_regex();
 
-    memo = malloc(sizeof(LibWCData));
+    data = malloc(sizeof(LibWCData));
 
     struct timespec timespec_buff_start, timespec_buff_end;
     struct tms tms_buff_start, tms_buff_end;
 
     while (running) {
-        printf(ANSI_COLOR_GREEN ANSI_COLOR_BOLD "[WC REPL] >>> " ANSI_COLOR_RESET);
+        printf(ANSI_COLOR_GREEN ANSI_COLOR_BOLD "WCLIB: >>> " ANSI_COLOR_RESET);
 
         char* line = NULL;
         size_t line_len;
@@ -190,24 +179,6 @@ int main(int argc, char** argv) {
 
         puts("EXECUTION TIME:");
         printf("REAL: %ldns\n", timespec_buff_end.tv_nsec - timespec_buff_start.tv_nsec);
-
-        // na moim systemie zdefiniowane jako
-
-        /*
-        inline clock_t times(struct tms *t) {
-            struct timespec ts;
-            clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
-            clock_t ticks(static_cast<clock_t>(static_cast<double>(ts.tv_sec)  * CLOCKS_PER_SEC +
-                                                static_cast<double>(ts.tv_nsec) * CLOCKS_PER_SEC / 1000000.0));
-            t->tms_utime  = ticks/2U;
-            t->tms_stime  = ticks/2U;
-            t->tms_cutime = 0; // vxWorks is lacking the concept of a child process!
-            t->tms_cstime = 0; // -> Set the wait times for childs to 0
-            return ticks;
-        }
-        */
-
-       // ciezko by to kiedykolwiek nie bylo 0
 
         printf("USER: %ldticks\n", tms_buff_end.tms_cutime - tms_buff_start.tms_cutime);
         printf("SYST: %ldticks\n", tms_buff_end.tms_cstime - tms_buff_start.tms_cstime);
