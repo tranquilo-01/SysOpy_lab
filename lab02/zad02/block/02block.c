@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <sys/times.h>
+#define BLOCKSIZE 16
 
 size_t getFileSize(FILE* file){
     fseek(file, 0L, SEEK_END);
@@ -10,13 +11,17 @@ size_t getFileSize(FILE* file){
     return size;
 }
 
-// czemu nie uzyc fgetc i fputc? -jest latwiej i chyba lepiej
-void changeLetter(char oldacsii, char newascii, char *inpath, char *outpath)
+void swap(char* first, char* second){
+    char tmp = *first;
+    *first = *second;
+    *second = tmp;
+}
+
+void reverse(char *inpath, char *outpath)
 {
     // tworzenie wskaznikow i otwieranie plikow
     FILE *inFile = fopen(inpath, "r");
     FILE *outFile = fopen(outpath, "w");
-
 
     // test czy sie otwarly
     if (inFile == NULL || outFile == NULL)
@@ -27,24 +32,29 @@ void changeLetter(char oldacsii, char newascii, char *inpath, char *outpath)
 
     // sprawdzenie rozmiaru pliku i zaalokowanie pamieci na bufor
     size_t fileSize = getFileSize(inFile);
-    char* buff = calloc(fileSize, sizeof(char));
+    char* buff = calloc(BLOCKSIZE, sizeof(char));
 
-    // zaladowanie pliku do buforu
-    fread(buff, sizeof(char), fileSize, inFile);
-
-    // ustawienie chara, ktory bedziemy sprawdzac na pierwszy
-    char* currentChar = buff;
-
-    // przejscie po pliku i ewentualna zamiana charu w buforze
-    while(*currentChar){
-        if(*currentChar == oldacsii){
-            *currentChar = newascii;
+    // ustawiam sie na koniec pliku i cofajac zapisuje chary do out
+    for(long i = fileSize - BLOCKSIZE; i >= 0; i -= BLOCKSIZE){
+        fseek(inFile, i, SEEK_SET);
+        fread(buff, sizeof(char), BLOCKSIZE, inFile);
+        for(int j = 0; j < BLOCKSIZE / 2; j++){
+            swap(&buff[j], &buff[BLOCKSIZE - j]);
         }
-        currentChar++;
+        fwrite(buff, sizeof(char), BLOCKSIZE, outFile);
     }
-    
-    // zapis do out
-    fwrite(buff, sizeof(char), fileSize, outFile);
+
+    int remainder = fileSize % BLOCKSIZE;
+    if(remainder > 0){
+        fseek(inFile, 0L, SEEK_SET);
+        fread(buff, sizeof(char), remainder+1, inFile);
+        printf("%s", buff);
+        for(int j = 0; j < remainder / 2; j++){
+            swap(&buff[j], &buff[remainder - j]);
+        }
+        fwrite(buff, sizeof(char), remainder+1, outFile);
+    }
+
 
     // zamkniecie plikow
     fclose(inFile);
@@ -53,22 +63,19 @@ void changeLetter(char oldacsii, char newascii, char *inpath, char *outpath)
 
 int main(int argc, char **argv)
 {
-    if (argc != 5)
+    if (argc != 3)
     {
-        printf("Wrong number of arguments [%d], 4 args expected", argc - 1);
+        printf("Wrong number of arguments [%d], 2 args expected\n", argc - 1);
         return -1;
     }
 
     struct timespec timespec_buff_start, timespec_buff_end;
     clock_gettime(CLOCK_REALTIME, &timespec_buff_start);
 
-    char inLetter = argv[1][0];
-    char outLetter = argv[2][0];
-    char* inputName = argv[3];
-    char* outputName = argv[4];
+    char* inputPath = argv[1];
+    char* outputPath = argv[2];
 
-    changeLetter(inLetter, outLetter, inputName, outputName);
-
+    reverse(inputPath, outputPath);
     clock_gettime(CLOCK_REALTIME, &timespec_buff_end);
     printf("EXECUTION TIME: %fs\n", (float) (timespec_buff_end.tv_nsec - timespec_buff_start.tv_nsec) / 1000000000.0);
 
