@@ -1,13 +1,22 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 #include <sys/times.h>
 
+size_t getFileSize(FILE* file){
+    fseek(file, 0L, SEEK_END);
+    size_t size = ftell(file);
+    rewind(file);
+    return size;
+}
+
+// czemu nie uzyc fgetc i fputc? -jest latwiej i chyba lepiej
 void changeLetter(char oldacsii, char newascii, char *inpath, char *outpath)
 {
     // tworzenie wskaznikow i otwieranie plikow
     FILE *inFile = fopen(inpath, "r");
     FILE *outFile = fopen(outpath, "w");
-    char ch;
+
 
     // test czy sie otwarly
     if (inFile == NULL || outFile == NULL)
@@ -16,16 +25,26 @@ void changeLetter(char oldacsii, char newascii, char *inpath, char *outpath)
         return;
     }
 
-    // czytanie po charze
-    while ((ch = fgetc(inFile)) != EOF)
-    {
-        // zamiana
-        if(ch == oldacsii){
-            ch = newascii;
+    // sprawdzenie rozmiaru pliku i zaalokowanie pamieci na bufor
+    size_t fileSize = getFileSize(inFile);
+    char* buff = calloc(fileSize, sizeof(char));
+
+    // zaladowanie pliku do buforu
+    fread(buff, sizeof(char), fileSize, inFile);
+
+    // ustawienie chara, ktory bedziemy sprawdzac na pierwszy
+    char* currentChar = buff;
+
+    // przejscie po pliku i ewentualna zamiana charu w buforze
+    while(*currentChar){
+        if(*currentChar == oldacsii){
+            *currentChar = newascii;
         }
-        // zapis
-        fputc(ch, outFile);
+        currentChar++;
     }
+    
+    // zapis do out
+    fwrite(buff, sizeof(char), fileSize, outFile);
 
     // zamkniecie plikow
     fclose(inFile);
