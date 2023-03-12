@@ -1,36 +1,38 @@
 #include <stdio.h>
 #include <time.h>
+#include <stdlib.h>
 #include <sys/times.h>
+#include <stdlib.h>
+#include <fcntl.h> 
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 void changeLetter(char oldacsii, char newascii, char *inpath, char *outpath)
 {
-    // tworzenie wskaznikow i otwieranie plikow
-    FILE *inFile = fopen(inpath, "r");
-    FILE *outFile = fopen(outpath, "w");
-    char ch;
+    // stworzenie deskryptorow i otwarcie plikow
+    int in_fd, out_fd;
+    in_fd = open(inpath, O_RDONLY);
+    out_fd = open(outpath, O_WRONLY);
 
-    // test czy sie otwarly
-    if (inFile == NULL || outFile == NULL)
-    {
-        printf("File is not available \n");
-        return;
-    }
+    char currentChar;
 
-    // czytanie po charze
-    while ((ch = fgetc(inFile)) != EOF)
-    {
-        // zamiana
-        if(ch == oldacsii){
-            ch = newascii;
+    // czytanie po charze, ewentualna zamiana i zapis do pliku
+    while(read(in_fd, &currentChar, 1) == 1){
+        if(currentChar == oldacsii){
+            write(out_fd, &newascii, 1);
+        }else{
+            write(out_fd, &currentChar, 1);
         }
-        // zapis
-        fputc(ch, outFile);
     }
 
-    // zamkniecie plikow
-    fclose(inFile);
-    fclose(outFile);
+    // zamkniecie chyba niepotrzebne ale ladnie wyglada
+    close(in_fd);
+    close(out_fd);
 }
+
+
+
 
 int main(int argc, char **argv)
 {

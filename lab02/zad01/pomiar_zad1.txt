@@ -1,0 +1,7 @@
+sys:
+zamiana a na u Asterix i Obelix: EXECUTION TIME: 0.004395s
+zamiana a na u Pan Tadeusz: EXECUTION TIME: 0.172882s
+
+lib:
+zamiana a na u Asterix i Obelix: EXECUTION TIME: 0.000234s
+zamiana a na u Pan Tadeusz: EXECUTION TIME: 0.006253s
