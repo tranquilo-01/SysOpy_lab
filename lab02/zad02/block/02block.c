@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <sys/times.h>
-#define BLOCKSIZE 16
+#define BLOCKSIZE 1024
 
 size_t getFileSize(FILE* file){
     fseek(file, 0L, SEEK_END);
@@ -12,6 +12,9 @@ size_t getFileSize(FILE* file){
 }
 
 void swap(char* first, char* second){
+    if(first == NULL || second == NULL){
+        printf("null");
+    }
     char tmp = *first;
     *first = *second;
     *second = tmp;
@@ -34,13 +37,14 @@ void reverse(char *inpath, char *outpath)
     size_t fileSize = getFileSize(inFile);
     char* buff = calloc(BLOCKSIZE, sizeof(char));
 
-    // ustawiam sie na koniec pliku i cofajac zapisuje chary do out
     for(long i = fileSize - BLOCKSIZE; i >= 0; i -= BLOCKSIZE){
         fseek(inFile, i, SEEK_SET);
         fread(buff, sizeof(char), BLOCKSIZE, inFile);
+        // printf("%ld: %s\n", i, buff);
         for(int j = 0; j < BLOCKSIZE / 2; j++){
             swap(&buff[j], &buff[BLOCKSIZE - j]);
         }
+        // printf("%s\n", buff);
         fwrite(buff, sizeof(char), BLOCKSIZE, outFile);
     }
 
@@ -48,13 +52,12 @@ void reverse(char *inpath, char *outpath)
     if(remainder > 0){
         fseek(inFile, 0L, SEEK_SET);
         fread(buff, sizeof(char), remainder+1, inFile);
-        printf("%s", buff);
+        // printf("%s", buff);
         for(int j = 0; j < remainder / 2; j++){
             swap(&buff[j], &buff[remainder - j]);
         }
         fwrite(buff, sizeof(char), remainder+1, outFile);
     }
-
 
     // zamkniecie plikow
     fclose(inFile);
