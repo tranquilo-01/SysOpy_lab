@@ -2,7 +2,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-void wcc(){
+void bytes(){
     DIR *dir;
     struct dirent *ent;
     struct stat file_stat;
@@ -11,7 +11,7 @@ void wcc(){
     // otwarcie katalogu
     dir = opendir(".");
     if(dir == NULL){
-        perror("Unable to open the catalog");
+        printf("Unable to open the catalog");
         return;
     }
 
@@ -28,6 +28,6 @@ void wcc(){
 }
 
 int main() {
-    wcc();
+    bytes();
     return 0;
 }
