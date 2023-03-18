@@ -1,7 +1,13 @@
+#include <dirent.h>
+#include <errno.h>
+#include <limits.h>
 #include <linux/limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #define MAX_PHRASE_LENGTH 255
 
@@ -24,7 +30,48 @@ void process_file(char* path, char* phrase) {
         }
     }
 
-    close(file);
+    fclose(file);
+}
+
+void process_directory(char* path, char* phrase) {
+    DIR* dir = opendir(path);
+    struct dirent* ent;
+    struct stat file_stat;
+
+    if (dir == NULL) {
+        perror("Error: cannot open directory");
+        return;
+    }
+
+    while ((ent = readdir(dir)) != NULL) {
+        // ladowanie danych o obiekcie do file_stat
+        stat(ent->d_name, &file_stat);
+        char child_path[PATH_MAX];
+        snprintf(child_path, PATH_MAX, "%s/%s", path, ent->d_name);
+
+        // jezeli jest katalogiem
+        if (S_ISDIR(file_stat.st_mode)) {
+            // jezeli zaczyna sie od . lub .. to pomija
+            if (strncmp(ent->d_name, ".", 1) == 0 || strncmp(ent->d_name, "..", 2) == 0) {
+                continue;
+            }
+
+            pid_t pid = fork();
+            if (pid == -1) {
+                perror("Error while forking");
+                continue;
+            }
+            if (pid == 0) {
+                process_directory(child_path, phrase);
+                exit(EXIT_SUCCESS);
+            }
+        } else if (S_ISREG(file_stat.st_mode)) {
+            process_file(child_path, phrase);
+        }
+    }
+    if (closedir(dir) == -1) {
+        perror("Error while closing the directory");
+    }
 }
 
 int main(int argc, char** argv) {
