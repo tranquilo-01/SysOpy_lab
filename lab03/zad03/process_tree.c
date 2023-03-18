@@ -14,13 +14,11 @@
 void process_file(char* path, char* phrase) {
     FILE* file = fopen(path, "r");
 
-    // sprawdzenie czy da sie otworzyc
     if (file == NULL) {
         perror("Error: cannot open file");
         return;
     }
 
-    // alokacja bufora
     char buffer[MAX_PHRASE_LENGTH];
 
     // jesli da sie otworzyc i zaczyna sie od szukanej frazy to wypisuje dane
@@ -44,11 +42,16 @@ void process_directory(char* path, char* phrase) {
     }
 
     while ((ent = readdir(dir)) != NULL) {
-        // ladowanie danych o obiekcie do file_stat
         char child_path[PATH_MAX];
+
+        // konkatenacja stringow aby stworzyc sciezke wglab katalogu
         snprintf(child_path, PATH_MAX, "%s/%s", path, ent->d_name);
 
-        stat(child_path, &file_stat);
+        // ladowanie danych o obiekcie do file_stat i sprawdzanie czy sie udalo
+        if (stat(child_path, &file_stat) == -1) {
+            perror("Error while loading stat");
+            continue;
+        }
 
         // jezeli jest katalogiem
         if (S_ISDIR(file_stat.st_mode)) {
@@ -57,6 +60,7 @@ void process_directory(char* path, char* phrase) {
                 continue;
             }
 
+            // jesli uda sie stworzyc proces potomny to wywoluje sie rekurencyjnie
             pid_t pid = fork();
             if (pid == -1) {
                 perror("Error while forking");
@@ -64,8 +68,11 @@ void process_directory(char* path, char* phrase) {
             }
             if (pid == 0) {
                 process_directory(child_path, phrase);
+
+                // konczenie procesu dziecka zeby dalej nie wykonywal kodu
                 exit(EXIT_SUCCESS);
             }
+            // jesli jest plikiem to wywoluje process_file()
         } else if (S_ISREG(file_stat.st_mode)) {
             process_file(child_path, phrase);
         }
@@ -90,6 +97,10 @@ int main(int argc, char** argv) {
     }
 
     process_directory(argv[1], argv[2]);
-    usleep(10000);
+
+    // zeby sie output z terminalem nie rozjezdzal
+    // w polecaniu napisane ze:
+    // - Procesy nie muszą czekać na zakończenie swoich procesów potomnych
+    usleep(100000);
     return 0;
 }
