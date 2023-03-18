@@ -13,6 +13,7 @@
 
 void process_file(char* path, char* phrase) {
     FILE* file = fopen(path, "r");
+    // printf("processing file: %s\n", path);
 
     // sprawdzenie czy da sie otworzyc
     if (file == NULL) {
@@ -26,7 +27,7 @@ void process_file(char* path, char* phrase) {
     // jesli da sie otworzyc i zaczyna sie od szukanej frazy to wypisuje dane
     if (fread(buffer, sizeof(char), strlen(phrase), file) != 0) {
         if (strncmp(buffer, phrase, strlen(phrase)) == 0) {
-            printf("%s, %d\n", path, getpid());
+            printf("%s %d\n", path, getpid());
         }
     }
 
@@ -34,6 +35,8 @@ void process_file(char* path, char* phrase) {
 }
 
 void process_directory(char* path, char* phrase) {
+    // printf("processing directory: %s\n", path);
+
     DIR* dir = opendir(path);
     struct dirent* ent;
     struct stat file_stat;
@@ -45,23 +48,33 @@ void process_directory(char* path, char* phrase) {
 
     while ((ent = readdir(dir)) != NULL) {
         // ladowanie danych o obiekcie do file_stat
-        stat(ent->d_name, &file_stat);
         char child_path[PATH_MAX];
         snprintf(child_path, PATH_MAX, "%s/%s", path, ent->d_name);
 
+        stat(child_path, &file_stat);
+
+        // printf("child path: %s\n", child_path);
+        // printf("%d\n", S_ISDIR(file_stat.st_mode));
+
         // jezeli jest katalogiem
         if (S_ISDIR(file_stat.st_mode)) {
+            // printf("inside isdir if: %s\n", child_path);
+
             // jezeli zaczyna sie od . lub .. to pomija
             if (strncmp(ent->d_name, ".", 1) == 0 || strncmp(ent->d_name, "..", 2) == 0) {
+                // printf("continuing: %s\n", child_path);
+
                 continue;
             }
 
+            // printf("forking: %s\n", child_path);
             pid_t pid = fork();
             if (pid == -1) {
                 perror("Error while forking");
                 continue;
             }
             if (pid == 0) {
+                // printf("powinno sie zaczac procesowac directory: %s\n", child_path);
                 process_directory(child_path, phrase);
                 exit(EXIT_SUCCESS);
             }
@@ -87,4 +100,8 @@ int main(int argc, char** argv) {
         fprintf(stderr, "Path too long. Max path length: %d", PATH_MAX);
         exit(EXIT_FAILURE);
     }
+
+    process_directory(argv[1], argv[2]);
+    usleep(10000);
+    return 0;
 }
