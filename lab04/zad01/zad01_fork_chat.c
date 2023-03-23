@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 
+// handler wypisujacy sygnal
 void handle_signal(int sig) {
     printf("Received signal %d\n", sig);
 }
