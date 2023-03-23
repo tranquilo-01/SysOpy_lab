@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 
+// handler wypisujacy sygnal
 void handle_signal(int sig) {
     printf("Received signal %d\n", sig);
 }
@@ -18,26 +19,28 @@ void check_pending(char* name) {
     }
 }
 
-void set_signal(char* name, int action) {
+void set_signal(char* name, char* action) {
     struct sigaction sa;
     sigset_t mask;
     sigemptyset(&mask);
     sigaddset(&mask, SIGUSR1);
-    if (action == 0) {  // ignore
+    if (strcmp(action, "ignore") == 0) {
         sigaction(SIGUSR1, NULL, &sa);
         sa.sa_handler = SIG_IGN;
         sigaction(SIGUSR1, &sa, NULL);
         printf("Ignoring signal %s\n", name);
-    } else if (action == 1) {  // handler
+    } else if (strcmp(action, "handler") == 0) {
         sigaction(SIGUSR1, NULL, &sa);
         sa.sa_handler = handle_signal;
         sigaction(SIGUSR1, &sa, NULL);
         printf("Setting handler for signal %s\n", name);
-    } else if (action == 2) {  // mask
+    } else if (strcmp(action, "mask") == 0) {
         sigprocmask(SIG_BLOCK, &mask, NULL);
         printf("Masking signal %s\n", name);
-    } else if (action == 3) {  // pending
+    } else if (strcmp(action, "pending") == 0) {
         check_pending(name);
+    } else {
+        fprintf(stderr, "Unknown action %s\n", action);
     }
 }
 
@@ -46,36 +49,21 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "Usage: %s <ignore/handler/mask/pending>\n", argv[0]);
         return 1;
     }
-    char* action_name = argv[1];
-    int action = -1;
-    if (strcmp(action_name, "ignore") == 0) {
-        action = 0;
-    } else if (strcmp(action_name, "handler") == 0) {
-        action = 1;
-    } else if (strcmp(action_name, "mask") == 0) {
-        action = 2;
-    } else if (strcmp(action_name, "pending") == 0) {
-        action = 3;
-    } else {
-        fprintf(stderr, "Unknown action %s\n", action_name);
-        return 1;
+
+    // ustawienie sygnalu w procesie przodka
+    set_signal("parent", argv[1]);
+
+    // wyslanie sygnalu do samego siebie (przodek)
+    raise(SIGUSR1);
+
+    // stworzenie potomka
+    if (fork() == -1) {
+        perror("Error while forking");
     }
 
-    set_signal("parent", action);
-
-    if (fork() == 0) {  // child process
-        set_signal("child", action);
-        if (action == 3) {  // pending
-            raise(SIGUSR1);
-        }
-        printf("Child process exiting\n");
-        return 0;
-    }
-
-    if (action != 3) {  // not pending
+    if (strcmp(argv[1], "pending") != 0) {
         raise(SIGUSR1);
     }
-
     sleep(1);
 
     return 0;
