@@ -1,4 +1,4 @@
-// napisz program ktory tworzy proces potomny a  nastepnie w nieskinczinej petli
+// napisz program ktory tworzy proces potomny a  nastepnie w niesknczinej petli
 // wysyla do swojego potomka sygnaly SIGUSR1. Potomek powinien zliczac otrzymane
 // od przodka sygnaly SIGUSR1 i wyswietlac na biezaco stan licznika
 
