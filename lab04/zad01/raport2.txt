@@ -1,0 +1,40 @@
+./zad01_exec.exe pending
+(12411): raise(SIGUSR1)
+(12411): signal is pending
+total 28
+-rw-rw-r-- 1 krzys krzys  1981 kwi  9 19:55 zad01_exec.c
+-rwxrwxr-x 1 krzys krzys 16664 kwi  9 19:55 zad01_exec.exe
+-rw-rw-r-- 1 krzys krzys  2232 kwi  9 19:47 zad01_fork.c
+
+./zad01_exec.exe mask
+(12372): raise(SIGUSR1)
+total 28
+-rw-rw-r-- 1 krzys krzys  1981 kwi  9 19:55 zad01_exec.c
+-rwxrwxr-x 1 krzys krzys 16664 kwi  9 19:55 zad01_exec.exe
+-rw-rw-r-- 1 krzys krzys  2232 kwi  9 19:47 zad01_fork.c
+
+./zad01_exec.exe ignore
+(12332): raise(SIGUSR1)
+total 28
+-rw-rw-r-- 1 krzys krzys  1981 kwi  9 19:55 zad01_exec.c
+-rwxrwxr-x 1 krzys krzys 16664 kwi  9 19:55 zad01_exec.exe
+-rw-rw-r-- 1 krzys krzys  2232 kwi  9 19:47 zad01_fork.c
+
+./zad01_fork.exe pending
+(8644): raise(SIGUSR1)
+(8644): signal is pending
+(8645): no signal is pending
+
+./zad01_fork.exe ignore
+(8711): raise(SIGUSR1)
+(8712): raise(SIGUSR1)
+
+./zad01_fork.exe mask
+(8743): raise(SIGUSR1)
+(8744): raise(SIGUSR1)
+
+./zad01_fork.exe handler
+(8761): raise(SIGUSR1)
+(8761): Received signal: 10
+(8762): raise(SIGUSR1)
+(8762): Received signal: 10
