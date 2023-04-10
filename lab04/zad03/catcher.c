@@ -17,7 +17,7 @@ void print_current_time() {
 
 void print_numbers() {
     for (int i = 1; i <= 100; i++)
-        printf("Catcher %i\n", i);
+        printf("Catcher: %i\n", i);
 }
 
 void print_request_number() {
@@ -25,8 +25,7 @@ void print_request_number() {
 }
 
 void finish() {
-    printf("Catcher: Ending.\n");
-    fflush(NULL);
+    printf("Catcher: Closing\n");
     exit(0);
 }
 
@@ -37,19 +36,45 @@ void send_ack(int sender_pid) {
 void handler(int signo, siginfo_t* info, void* context) {
     int sender_pid = info->si_pid;
     int task = info->si_status;
+
     send_ack(sender_pid);
-    printf("handled %d %d\n", sender_pid, task);
+
+    printf("Catcher: Handling task: %d\n", task);
+
+    request_count++;
+
+    switch (task) {
+        case 1:
+            print_numbers();
+            break;
+        case 2:
+            print_current_time();
+            break;
+        case 3:
+            print_request_number();
+            break;
+        case 5:
+            finish();
+            break;
+        default:
+            fprintf(stderr, "Invalid task number\n");
+            exit(1);
+            break;
+    }
+    printf("\n");
 }
 
 int main(int argc, char** argv) {
-    printf("Catcher: %d\n", getpid());
+    printf("Catcher: %d\n\n", getpid());
 
+    // ustawienie handlera
     struct sigaction sa;
     sigemptyset(&sa.sa_mask);
     sa.sa_sigaction = handler;
     sa.sa_flags = SA_SIGINFO;
     sigaction(SIGUSR1, &sa, NULL);
 
+    // oczekiwanie na sygnal
     while (1) {
         continue;
     }
