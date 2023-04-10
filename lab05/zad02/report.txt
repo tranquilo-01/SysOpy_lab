@@ -1,0 +1,25 @@
+Rectangle width: 0.0000000010
+Number of processes: 1
+Integration result: 3.1415926687
+Elapsed time: 12.241725 s
+
+Rectangle width: 0.0000000010
+Number of processes: 10
+Integration result: 3.1415926832
+Elapsed time: 3.417406 s
+
+Rectangle width: 0.0000000010
+Number of processes: 50
+Integration result: 3.1415927655
+Elapsed time: 3.399480 s
+
+Rectangle width: 0.0000000010
+Number of processes: 100
+Integration result: 3.1415928807
+Elapsed time: 3.346849 s
+
+Rectangle width: 0.0000000010
+Number of processes: 1000
+Integration result: 3.1415949008
+Elapsed time: 4.052847 s
+
