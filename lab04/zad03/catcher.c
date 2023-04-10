@@ -30,9 +30,14 @@ void finish() {
     exit(0);
 }
 
+void send_ack(int sender_pid) {
+    kill(sender_pid, SIGUSR1);
+}
+
 void handler(int signo, siginfo_t* info, void* context) {
     int sender_pid = info->si_pid;
     int task = info->si_status;
+    send_ack(sender_pid);
     printf("handled %d %d\n", sender_pid, task);
 }
 
