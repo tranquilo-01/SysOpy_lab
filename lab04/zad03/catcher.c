@@ -29,6 +29,18 @@ void finish() {
     exit(0);
 }
 
+void keep_printing_time() {
+    time_t start_time, end_time;
+    time(&start_time);
+    while (1) {
+        time(&end_time);
+        if (difftime(end_time, start_time) > 0) {
+            print_current_time();
+            time(&start_time);
+        }
+    }
+}
+
 void send_ack(int sender_pid) {
     kill(sender_pid, SIGUSR1);
 }
@@ -52,6 +64,9 @@ void handler(int signo, siginfo_t* info, void* context) {
             break;
         case 3:
             print_request_number();
+            break;
+        case 4:
+            keep_printing_time();
             break;
         case 5:
             finish();
