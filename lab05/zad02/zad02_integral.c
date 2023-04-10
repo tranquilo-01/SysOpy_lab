@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
@@ -21,6 +22,10 @@ int main(int argc, char** argv) {
         fprintf(stderr, "Wrong number of arguments. 2 arguments expected: rectangle width and number of processes.");
     }
 
+    struct timeval start_time, end_time;
+    double elapsed_time;
+    gettimeofday(&start_time, NULL);
+
     double integration_result = 0.0;
 
     double rect_width = strtod(argv[1], NULL);
@@ -35,8 +40,6 @@ int main(int argc, char** argv) {
             fprintf(stderr, "Error while creating a pipe");
             exit(EXIT_FAILURE);
         }
-        // zamkniece koncowek do zapisu dla procesu rodzica
-        close(fd[i][1]);
     }
 
     // tworzenie procesow dzieci
@@ -56,22 +59,25 @@ int main(int argc, char** argv) {
             double seg_end = seg_start + seg_width;
 
             double child_result = integrate(seg_start, seg_end, rect_width);
-            printf("%f\n", child_result);
 
             // zapis do pipe i zakonczenie procesu
             write(fd[i][1], &child_result, sizeof(double));
+            close(fd[i][1]);
             exit(EXIT_SUCCESS);
         }
     }
 
     // proces rodzica
     for (int i = 0; i < n_procs; i++) {
+        close(fd[i][1]);
         double component = 0.0;
         read(fd[i][0], &component, sizeof(double));
-        printf("%f\n", component);
         integration_result += component;
+        close(fd[i][0]);
     }
 
-    printf("Rectangle width: %f\nNumber of processes: %d\nIntegration result: %f\n", rect_width, n_procs, integration_result);
+    gettimeofday(&end_time, NULL);
+    elapsed_time = (end_time.tv_sec - start_time.tv_sec) + (end_time.tv_usec - start_time.tv_usec) / 1000000.0;
+    printf("Rectangle width: %.10f\nNumber of processes: %d\nIntegration result: %.10f\nElapsed time: %f s\n", rect_width, n_procs, integration_result, elapsed_time);
     return 0;
 }
