@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define BUFF_SIZE 64
+#define BUFF_SIZE 16
 #define STREAM_PATH "./integrator_stream"
 
 double f(double x) {
@@ -22,17 +22,17 @@ int main(int argc, char** argv) {
     double a = strtod(argv[2], NULL);
     double b = strtod(argv[3], NULL);
 
-    printf("worker running\n");
-
     double result = integrate(a, b, dx);
 
     char result_str[BUFF_SIZE];
 
-    snprintf(result_str, BUFF_SIZE, "%f\n", result);
+    snprintf(result_str, BUFF_SIZE, "%f,", result);
 
     int stream = open(STREAM_PATH, O_WRONLY);
 
-    write(stream, snprintf, BUFF_SIZE);
+    write(stream, result_str, BUFF_SIZE);
 
     close(stream);
+
+    return 0;
 }
