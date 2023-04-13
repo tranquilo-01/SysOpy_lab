@@ -34,7 +34,5 @@ int main(int argc, char** argv) {
 
     close(stream);
 
-    printf("returning\n");
-
     return 0;
 }

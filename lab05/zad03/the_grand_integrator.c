@@ -15,12 +15,12 @@
 #define STREAM_PATH "./integrator_stream"
 
 int main(int argc, char** argv) {
-    printf("starting main\n");
     if (argc != 3) {
         fprintf(stderr, "Wrong number of arguments. 2 arguments expected: rectangle width and number of processes.\n");
         exit(EXIT_FAILURE);
     }
 
+    // pomiar czasu
     struct timeval start_time, end_time;
     double elapsed_time;
     gettimeofday(&start_time, NULL);
@@ -28,12 +28,10 @@ int main(int argc, char** argv) {
     int n_procs = atoi(argv[2]);
     double seg_width = 1.0 / n_procs;
 
-    printf("running mkfifo\n");
-
     // stworzenie potoku w biezacym katalogu
     mkfifo(STREAM_PATH, 0666);
-    printf("mkfifo done\n");
 
+    // uruchamianie programu obliczajacego odpowiednia liczbe razy
     for (int i = 0; i < n_procs; i++) {
         if (fork() == 0) {
             double curr_seg_start = i * seg_width;
@@ -47,35 +45,29 @@ int main(int argc, char** argv) {
         }
     }
 
-    printf("processes created\n");
-
-    char* p;
-    char* end;
-    char* delimiter = ",";
+    // przygotowanie buforu do zapisu
     char read_buffer[READ_BUFF_SIZE];
 
-    double component = 0.0;
     double integration_result = 0.0;
 
-    printf("opening stream\n");
+    // otwarcie potoku
     int stream = open(STREAM_PATH, O_RDONLY);
-    printf("stream opened\n");
-    int already_read = 0;
+    int summed_component_number = 0;
+    size_t read_size = 0;
+    char* token;
 
-    while (already_read < n_procs) {
-        size_t size = read(stream, read_buffer, READ_BUFF_SIZE);
-        read_buffer[size] = 0;
-
-        char delim[] = ",";
-        char* token;
-
-        token = strtok(read_buffer, delim);
-        for (; token; token = strtok(NULL, delim)) {
+    // dopoki nie zsumujemy tylu skladnikow ile programow zostalo uruchomionych
+    while (summed_component_number < n_procs) {
+        read_size = read(stream, read_buffer, READ_BUFF_SIZE);
+        read_buffer[read_size] = 0;
+        token = strtok(read_buffer, ",");
+        while (token) {
             integration_result += strtod(token, NULL);
-            already_read++;
-            printf("%d\n", already_read);
+            summed_component_number++;
+            token = strtok(NULL, ",");
         }
     }
+
     close(stream);
 
     remove(STREAM_PATH);
