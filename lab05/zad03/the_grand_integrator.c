@@ -10,7 +10,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define WRITE_BUFF_SIZE 16
+#define WRITE_BUFF_SIZE 1024
 #define READ_BUFF_SIZE 1024
 #define STREAM_PATH "./integrator_stream"
 
@@ -61,18 +61,19 @@ int main(int argc, char** argv) {
     int stream = open(STREAM_PATH, O_RDONLY);
     printf("stream opened\n");
     int already_read = 0;
-    while (read(stream, read_buffer, READ_BUFF_SIZE) > 0) {
-        p = strtok(read_buffer, delimiter);
 
-        while (p != NULL) {
-            component = strtod(p, &end);
+    while (already_read < n_procs) {
+        size_t size = read(stream, read_buffer, READ_BUFF_SIZE);
+        read_buffer[size] = 0;
 
-            if (end != p) {  // check if conversion succeeded
-                integration_result += component;
-                printf("read\n");
-            }
+        char delim[] = ",";
+        char* token;
 
-            p = strtok(NULL, delimiter);
+        token = strtok(read_buffer, delim);
+        for (; token; token = strtok(NULL, delim)) {
+            integration_result += strtod(token, NULL);
+            already_read++;
+            printf("%d\n", already_read);
         }
     }
     close(stream);

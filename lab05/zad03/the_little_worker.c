@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define BUFF_SIZE 16
+#define BUFF_SIZE 1024
 #define STREAM_PATH "./integrator_stream"
 
 double f(double x) {
@@ -26,13 +26,15 @@ int main(int argc, char** argv) {
 
     char result_str[BUFF_SIZE];
 
-    snprintf(result_str, BUFF_SIZE, "%f,", result);
+    size_t size = snprintf(result_str, BUFF_SIZE, "%f,", result);
 
     int stream = open(STREAM_PATH, O_WRONLY);
 
-    write(stream, result_str, BUFF_SIZE);
+    write(stream, result_str, size);
 
     close(stream);
+
+    printf("returning\n");
 
     return 0;
 }
