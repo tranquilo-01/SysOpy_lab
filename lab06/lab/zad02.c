@@ -1,0 +1,1 @@
+// zmodyfikuj poprzedni program tak aby czytacz i pisacz to byly 2 osobne programy
