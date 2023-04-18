@@ -1,15 +1,15 @@
 CFLAGS = -Wall
 CC = gcc
 
-main: main.o
+main: zad03.o
 
 clean:
-	rm -f main.o main
+	rm -f zad03.o zad03
 
-test:  main
+test:  zad03
 	@echo -e "\nTESTING\n"
-	./main 5 
-	./main 7
-	./main 100 | wc -l
-	./main 200 | wc -l
-all: main test
+	./zad03 5 
+	./zad03 7
+	./zad03 100 | wc -l
+	./zad03 200 | wc -l
+all: zad03 test
