@@ -10,7 +10,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define WRITE_BUFF_SIZE 1024
+#define WRITE_BUFF_SIZE 32
 #define READ_BUFF_SIZE 1024
 #define STREAM_PATH "./integrator_stream"
 
@@ -34,14 +34,16 @@ int main(int argc, char** argv) {
     // uruchamianie programu obliczajacego odpowiednia liczbe razy
     for (int i = 0; i < n_procs; i++) {
         if (fork() == 0) {
+            // ustalenie przedzialu i zamiana na string do parametru
             double curr_seg_start = i * seg_width;
             double curr_seg_end = curr_seg_start + seg_width;
-            char start_buff[WRITE_BUFF_SIZE];
-            char end_buff[WRITE_BUFF_SIZE];
-            snprintf(start_buff, WRITE_BUFF_SIZE, "%f", curr_seg_start);
-            snprintf(end_buff, WRITE_BUFF_SIZE, "%f", curr_seg_end);
+            char start_str[WRITE_BUFF_SIZE];
+            char end_str[WRITE_BUFF_SIZE];
+            snprintf(start_str, WRITE_BUFF_SIZE, "%f", curr_seg_start);
+            snprintf(end_str, WRITE_BUFF_SIZE, "%f", curr_seg_end);
 
-            execl("./the_little_worker", "the_little_worker", argv[1], start_buff, end_buff, NULL);
+            // uruchomienie programu obliczjacego calke
+            execl("./the_little_worker", "the_little_worker", argv[1], start_str, end_str, NULL);
         }
     }
 
@@ -53,14 +55,15 @@ int main(int argc, char** argv) {
     // otwarcie potoku
     int stream = open(STREAM_PATH, O_RDONLY);
     int summed_component_number = 0;
-    size_t read_size = 0;
-    char* token;
 
     // dopoki nie zsumujemy tylu skladnikow ile programow zostalo uruchomionych
     while (summed_component_number < n_procs) {
-        read_size = read(stream, read_buffer, READ_BUFF_SIZE);
+        // rozmiar przeczytanego kawalka
+        size_t read_size = read(stream, read_buffer, READ_BUFF_SIZE);
+        // terminowanie buforu na koncu
         read_buffer[read_size] = 0;
-        token = strtok(read_buffer, ",");
+        // pobranie pierwszego tokenu i kolejnych dopoki sa i sumowanie
+        char* token = strtok(read_buffer, ",");
         while (token) {
             integration_result += strtod(token, NULL);
             summed_component_number++;

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define BUFF_SIZE 1024
+#define BUFF_SIZE 32
 #define STREAM_PATH "./integrator_stream"
 
 double f(double x) {
