@@ -11,11 +11,11 @@
 #define PROJECT_ID 'A'
 
 /* message buffer for msgsnd and msgrcv calls */
-struct msgbuf {
-    long type;     /* typ komunikatu   */
-    char text[64]; /* tresc komunikatu */
-    int clientID;  /*id klienta przyznane przez serwer*/
-    int clientKey;
+typedef struct msgbuf {
+    long type;       /* typ komunikatu   */
+    char text[64];   /* tresc komunikatu */
+    int clientID;    /*id klienta przyznane przez serwer*/
+    key_t clientKey; /*klucz dostepu do kolejki klienta*/
 } msgbuf;
 
 const int MSG_BUFF_SIZE = sizeof(msgbuf) - sizeof(long);
