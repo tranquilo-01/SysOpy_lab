@@ -5,10 +5,17 @@
 #include <sys/msg.h>
 #include "common.h"
 
-int main(int argc, char** argv) {
-    // id kolejki przekazywane jako parametr
-    int mymsgq = atoi(argv[1]);
-    printf("%d\n", mymsgq);
+int main() {
+    // tworzenie unikalnego klucza do identyfikacji kolejki
+    key_t key = ftok(".", 'A');
+
+    if (key == -1) {
+        perror("writer: ftok error");
+        exit(EXIT_FAILURE);
+    }
+
+    // uzyskanie dostepu do kolejki stworzonej przez writer
+    int mymsgq = msgget(key, 0);
 
     // stworenie bufora do odebrania wiadomosci
     struct msgbuf buff1;
