@@ -6,12 +6,15 @@
 #include <time.h>
 #include "common.h"
 
+// TODO
+// rownolegle czytanie i pisanie przez clienta
+// odbieranie sygnalow przez klienta
+
 // tablica pod id klienta przechowuje identyfikator jego kolejki
 int clients[MAX_CLIENT_NUMBER];
-int activeClients = 0;
 int serverQ;
 char timeBuff[TIME_BUFF_SIZE];
-
+int activeClients = 0;
 void logToFile(msgbuf* message) {
     getTime(timeBuff);
 
@@ -62,6 +65,7 @@ void handleInit(msgbuf* buffer) {
 
     // przypisanie identyfikatora kolejki pod odpowiedni indeks tablicy
     clients[idx] = newClientQ;
+    activeClients++;
 
     // wyslanie potwierdzenia o przyznaniu id do klienta
     struct msgbuf message = {.type = INIT, .text = 0, .clientID = idx, .clientKey = -1};
@@ -69,8 +73,11 @@ void handleInit(msgbuf* buffer) {
 }
 
 void handleStop(msgbuf* buffer) {
-    printf("handling stop: %ld\n", buffer->type);
     logToFile(buffer);
+
+    // usuniecie klienta z kolejki
+    clients[buffer->clientID] = -1;
+    activeClients--;
 }
 
 void handleList(msgbuf* buffer) {
@@ -86,25 +93,37 @@ void handleList(msgbuf* buffer) {
 
 void handleTall(msgbuf* buffer) {
     logToFile(buffer);
+    printf("%s", buffer->text);
 
-    printf("handling tall: %ld\n", buffer->type);
+    struct msgbuf message = {.clientID = buffer->clientID, .time = *(buffer->time), .text = *(buffer->text)};
+    for (int i = 0; i < MAX_CLIENT_NUMBER; i++) {
+        if (clients[i] != -1 && clients[i] != buffer->clientID) {
+            msgsnd(clients[i], &message, MSG_BUFF_SIZE, 0);
+        }
+    }
 }
 
 void handleTone(msgbuf* buffer) {
     logToFile(buffer);
 
-    printf("handling tone: %ld\n", buffer->type);
+    if (clients[buffer->recipientID] == -1) {
+        printf("Client wint given ID does not exist\n");
+        return;
+    }
+
+    struct msgbuf message = {.clientID = buffer->clientID, .time = *(buffer->time), .text = *(buffer->text), .recipientID = buffer->recipientID};
+    msgsnd(clients[buffer->recipientID], &message, MSG_BUFF_SIZE, 0);
 }
 
 void shutdown() {
     // kazdemu klientowi z tablicy wysylam wiadomosc stop i usuwam go z tablicy
+    printf("SERVER SHUTTING DOWN\n");
     for (int i = 0; i < MAX_CLIENT_NUMBER; i++) {
         if (clients[i] != -1) {
             struct msgbuf shutdownMessage = {.type = STOP, .clientID = i};
             msgsnd(clients[i], &shutdownMessage, MSG_BUFF_SIZE, 0);
             clients[i] = -1;
         }
-        printf("\n");
     }
 
     // usuniecie kolejki serwera
@@ -123,7 +142,6 @@ int main() {
 
     // ustawienie handlera dla sygnalu ubicia
     signal(SIGINT, shutdown);
-    atexit(shutdown);
 
     // klucz serwera na podstawie sciezki katalogu domowego i stalej serverID
     const key_t serverKey = ftok(HOME_PATH, PROJECT_ID);

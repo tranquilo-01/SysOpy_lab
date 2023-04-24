@@ -11,6 +11,7 @@
 #define MESSAGE_LENGTH 64
 #define PROJECT_ID 'A'
 #define TIME_BUFF_SIZE 64
+#define ORDER_BUFF_SIZE 69
 
 /* message buffer for msgsnd and msgrcv calls */
 typedef struct msgbuf {
@@ -18,7 +19,7 @@ typedef struct msgbuf {
     char text[64];             /* tresc komunikatu */
     int clientID;              /*id klienta przyznane przez serwer*/
     int recipientID;           /*id odbiorcy*/
-    char date[TIME_BUFF_SIZE]; /*data jako string*/
+    char time[TIME_BUFF_SIZE]; /*data jako string*/
     key_t clientKey;           /*klucz dostepu do kolejki klienta*/
 } msgbuf;
 
