@@ -9,7 +9,7 @@ all:
 	make server
 
 clean:
-	rm -f client server
+	rm -f client server log.txt
 
 recompile:
 	make clean
