@@ -10,3 +10,7 @@ all:
 
 clean:
 	rm -f client server
+
+recompile:
+	make clean
+	make all

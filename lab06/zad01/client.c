@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include "common.h"
 
-int clientID = 0;
+int clientID = -1;
 
 int main() {
     // uzyskanie dostepu do kolejki komunikatow po stronie serwera
@@ -17,9 +17,9 @@ int main() {
     // stworzenie kolejki po stronie klienta
     srand(time(NULL));
     const key_t clientKey = ftok(HOME_PATH, rand() % 255 + 1);
-    printf("%d\n", clientKey);
+    // printf("%d\n", clientKey);
     const int clientQ = msgget(clientKey, IPC_CREAT | 0666);
-    printf("clientQ: %d\n", clientQ);
+    // printf("clientQ: %d\n", clientQ);
 
     // bufor na inicjalna wiadomosc i wyslanie jej
     struct msgbuf initMessage = {.type = INIT, .text = 0, .clientID = -1, .clientKey = clientKey};

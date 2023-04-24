@@ -19,12 +19,11 @@ void handleInit(msgbuf* buffer) {
     // szukanie pierwszego wolnego id
     int idx = 0;
     while (clients[idx] != -1) {
-        continue;
+        idx++;
     }
 
     // uzyskanie dostepu do kolejki klienta
     int newClientQ = msgget(buffer->clientKey, 0);
-    printf("newClientQ: %d\n", newClientQ);
 
     // przypisanie identyfikatora kolejki pod odpowiedni indeks tablicy
     clients[idx] = newClientQ;
@@ -82,7 +81,7 @@ int main() {
                 handleTall(&msgBuffer);
                 break;
             case TONE:
-                handleTall(&msgBuffer);
+                handleTone(&msgBuffer);
                 break;
         }
     }
