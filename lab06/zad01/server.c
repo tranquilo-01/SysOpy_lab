@@ -6,14 +6,12 @@
 #include <time.h>
 #include "common.h"
 
-// TODO
-// rownolegle czytanie i pisanie przez clienta
-
 // tablica pod id klienta przechowuje identyfikator jego kolejki
 int clients[MAX_CLIENT_NUMBER];
 int serverQ;
 char timeBuff[TIME_BUFF_SIZE];
 int activeClients = 0;
+
 void logToFile(msgbuf* message) {
     getTime(timeBuff);
 
@@ -141,6 +139,7 @@ int main() {
     // funkcja zdefiniowana w headerze
     getTime(timeBuff);
     printf("%s\n", timeBuff);
+
     // inicjalizacja tablicy z identyfikatorami kolejek klientow
     for (int i = 0; i < MAX_CLIENT_NUMBER; i++) {
         clients[i] = -1;
