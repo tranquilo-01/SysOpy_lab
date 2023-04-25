@@ -8,7 +8,6 @@
 
 // TODO
 // rownolegle czytanie i pisanie przez clienta
-// odbieranie sygnalow przez klienta
 
 // tablica pod id klienta przechowuje identyfikator jego kolejki
 int clients[MAX_CLIENT_NUMBER];
@@ -93,12 +92,15 @@ void handleList(msgbuf* buffer) {
 
 void handleTall(msgbuf* buffer) {
     logToFile(buffer);
-    printf("%s", buffer->text);
 
-    struct msgbuf message = {.clientID = buffer->clientID, .time = *(buffer->time), .text = *(buffer->text)};
+    struct msgbuf message = {.type = TALL, .clientID = buffer->clientID};
+    strcpy(message.time, timeBuff);
+    strcpy(message.text, buffer->text);
     for (int i = 0; i < MAX_CLIENT_NUMBER; i++) {
-        if (clients[i] != -1 && clients[i] != buffer->clientID) {
-            msgsnd(clients[i], &message, MSG_BUFF_SIZE, 0);
+        if (clients[i] != -1 && i != buffer->clientID) {
+            if (msgsnd(clients[i], &message, MSG_BUFF_SIZE, 0) == -1) {
+                perror("msgsnd");
+            }
         }
     }
 }
@@ -111,13 +113,17 @@ void handleTone(msgbuf* buffer) {
         return;
     }
 
-    struct msgbuf message = {.clientID = buffer->clientID, .time = *(buffer->time), .text = *(buffer->text), .recipientID = buffer->recipientID};
-    msgsnd(clients[buffer->recipientID], &message, MSG_BUFF_SIZE, 0);
+    struct msgbuf message = {.type = TONE, .clientID = buffer->clientID, .recipientID = buffer->recipientID};
+    strcpy(message.time, timeBuff);
+    strcpy(message.text, buffer->text);
+    if (msgsnd(clients[buffer->recipientID], &message, MSG_BUFF_SIZE, 0) == -1) {
+        perror("msgsnd");
+    }
 }
 
 void shutdown() {
     // kazdemu klientowi z tablicy wysylam wiadomosc stop i usuwam go z tablicy
-    printf("SERVER SHUTTING DOWN\n");
+    printf("\nSERVER SHUTTING DOWN\n");
     for (int i = 0; i < MAX_CLIENT_NUMBER; i++) {
         if (clients[i] != -1) {
             struct msgbuf shutdownMessage = {.type = STOP, .clientID = i};
