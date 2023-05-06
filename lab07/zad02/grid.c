@@ -8,10 +8,37 @@
 
 const int grid_width = 30;
 const int grid_height = 30;
-const int thread_number = grid_height * grid_width;
+const int cell_number = grid_height * grid_width;
+int thread_number;
+int* block_starts = NULL;
+int* block_sizes = NULL;
+pthread_t* threads = NULL;  // array for storing tids
 
-// array for storing tids
-pthread_t* threads = NULL;
+// function calculates block sizes, so the are as close to each other as possible
+void calculate_block_sizes(int thread_n) {
+    if (thread_n > cell_number) {
+        fprintf(stderr, "Thread number cannot be more than cell number\n");
+        exit(-1);
+    }
+
+    thread_number = thread_n;
+    block_sizes = calloc(thread_number, sizeof(int));
+    block_starts = calloc(thread_number, sizeof(int));
+
+    int min_block_size = cell_number / thread_number;
+    int remainder = cell_number % thread_number;
+    int sum = 0;
+
+    for (int i = 0; i < thread_number; i++) {
+        block_starts[i] = sum;
+        if (i < remainder) {
+            block_sizes[i] = min_block_size + 1;
+        } else {
+            block_sizes[i] = min_block_size;
+        }
+        sum += block_sizes[i];
+    }
+}
 
 char* create_grid() {
     return malloc(sizeof(char) * grid_width * grid_height);
@@ -90,18 +117,24 @@ void update_grid_threads(char* src, char* dst) {
 }
 
 // handler ignoring the signal
+// czasem jakby nie dzialalo nie ma pojecia dlaczego
 void sigusr1_handler(int signo, siginfo_t* info, void* context) {}
 
 // thread function updating cell
-void* update_cell(void* arg) {
+void* update_block(void* arg) {
     // reading arguments
-    UpdateCellArgs* args = (UpdateCellArgs*)arg;
+    UpdateBlockArgs* args = (UpdateBlockArgs*)arg;
 
     while (1) {
-        // number of the cell in linear array
-        int cell = args->cell;
+        // number of the block in block_sizes array
+        int block_number = args->block;
+        int current_cell = block_starts[block_number];
 
-        args->dst[cell] = is_alive(cell / grid_width, cell % grid_width, args->src);
+        // goes from the begginnng to the end of the block and checks if the cell is still alive
+        for (int i = 0; i < block_sizes[block_number]; i++) {
+            args->dst[current_cell] = is_alive(current_cell / grid_width, current_cell % grid_width, args->src);
+            current_cell++;
+        }
 
         // pausing and waiting for the sigusr1 to "wake up" the thread
         pause();
@@ -123,6 +156,7 @@ void init_threads(char* src, char* dst) {
     }
 
     // setting a handler to ignore sigusr1
+    // czasem jakby nie dzialalo
     struct sigaction action;
     sigemptyset(&action.sa_mask);
     action.sa_sigaction = sigusr1_handler;
@@ -133,12 +167,12 @@ void init_threads(char* src, char* dst) {
 
     // creating threads with their arguments
     for (int i = 0; i < thread_number; i++) {
-        UpdateCellArgs* args = malloc(sizeof(UpdateCellArgs));
+        UpdateBlockArgs* args = malloc(sizeof(UpdateBlockArgs));
 
         args->dst = dst;
         args->src = src;
-        args->cell = i;
+        args->block = i;
 
-        pthread_create(&threads[i], NULL, update_cell, args);
+        pthread_create(&threads[i], NULL, update_block, args);
     }
 }

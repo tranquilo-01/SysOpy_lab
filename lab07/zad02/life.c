@@ -7,7 +7,16 @@
 #include <unistd.h>
 #include "grid.h"
 
-int main() {
+int main(int argc, char** argv) {
+    if (argc != 2) {
+        fprintf(stderr, "Wrong number of arguments. 1 argument - number of threads expected");
+        exit(-1);
+    }
+
+    int thread_number = atoi(argv[1]);
+
+    calculate_block_sizes(thread_number);
+
     srand(time(NULL));
     setlocale(LC_CTYPE, "");
     initscr();  // Start curses mode
