@@ -16,14 +16,9 @@ int main() {
     char* background = create_grid();
     char* tmp;
 
-    printf("Initializing grid\n");
     init_grid(foreground);
-    printf("Grid initialized\n");
-    printf("Initializing threads\n");
     init_threads(foreground, background);
-    printf("Threads initialized\n");
 
-    printf("Starting loop\n");
     while (true) {
         draw_grid(foreground);
         usleep(500 * 1000);

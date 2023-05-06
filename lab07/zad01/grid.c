@@ -12,7 +12,6 @@ const int thread_number = grid_height * grid_width;
 
 // array for storing tids
 pthread_t* threads = NULL;
-int* threads_args = NULL;
 
 char* create_grid() {
     return malloc(sizeof(char) * grid_width * grid_height);
@@ -83,29 +82,31 @@ void update_grid(char* src, char* dst) {
     }
 }
 
+// function "waking up" all the threads using sugusr1
 void update_grid_threads(char* src, char* dst) {
     for (int i = 0; i < thread_number; i++) {
         pthread_kill(threads[i], SIGUSR1);
     }
 }
 
-void handler(int signo, siginfo_t* info, void* context) {}
+// handler ignoring the signal
+void sigusr1_handler(int signo, siginfo_t* info, void* context) {}
 
+// thread function updating cell
 void* update_cell(void* arg) {
+    // reading arguments
     UpdateCellArgs* args = (UpdateCellArgs*)arg;
 
     while (1) {
-        struct sigaction action;
-        sigemptyset(&action.sa_mask);
-        action.sa_sigaction = handler;
-        sigaction(SIGUSR1, &action, NULL);
-
+        // number of the cell in linear array
         int cell = args->cell;
 
         args->dst[cell] = is_alive(cell / grid_width, cell % grid_width, args->src);
 
+        // pausing and waiting for the sigusr1 to "wake up" the thread
         pause();
 
+        // switching the cells in the grid
         char* tmp = args->src;
         args->src = args->dst;
         args->dst = tmp;
@@ -114,23 +115,29 @@ void* update_cell(void* arg) {
     return NULL;
 }
 
+// function initializing all threads before the simulation starts
 void init_threads(char* src, char* dst) {
     if (threads != NULL) {
         fprintf(stderr, "Error: threads have been initialized already\n");
         exit(-1);
     }
 
-    threads = calloc(thread_number, sizeof(pthread_t));
-    printf("calloc succesfull\n");
+    // setting a handler to ignore sigusr1
+    struct sigaction action;
+    sigemptyset(&action.sa_mask);
+    action.sa_sigaction = sigusr1_handler;
+    sigaction(SIGUSR1, &action, NULL);
 
+    // initializing the array storing pids
+    threads = calloc(thread_number, sizeof(pthread_t));
+
+    // creating threads with their arguments
     for (int i = 0; i < thread_number; i++) {
         UpdateCellArgs* args = malloc(sizeof(UpdateCellArgs));
-        printf("malloc succesfull %d\n", i);
 
         args->dst = dst;
         args->src = src;
         args->cell = i;
-        printf("reading from args succesfull\n");
 
         pthread_create(&threads[i], NULL, update_cell, args);
     }
