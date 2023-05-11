@@ -1,3 +1,3 @@
-char * connect_shared(char * name, int size);
-void disconnect_shared(char * shared);
-void delete_shared(char * name);
+char * attach_shm(char * name, int size);
+void detach_shm(char * shared);
+void remove_shm(char * name);

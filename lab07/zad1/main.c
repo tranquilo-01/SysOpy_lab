@@ -6,64 +6,63 @@
 #include "semaphores.h"
 #include "sharedmemory.h"
 
-char* lobby_shared;
-char* seats_shared;
-char* move_shared;
-char* reserved_shared;
+char* lobby_shm;
+char* seats_shm;
+char* move_shm;
+char* reserved_shm;
 
-Sema lobby_sema;
-Sema seats_sema;
+Semaphore lobby_sem;
+Semaphore seats_sem;
 
-void create_shared() {
-    lobby_shared = connect_shared(LOBBY_QUEUE_NAME, QUEUE_SIZE);
-    seats_shared = connect_shared(SEATS_QUEUE_NAME, QUEUE_SIZE);
-    move_shared = connect_shared(MOVE_QUEUE_NAME, QUEUE_SIZE);
-    reserved_shared = connect_shared(MOVE_QUEUE_NAME, QUEUE_SIZE);
+void create_shm() {
+    lobby_shm = attach_shm(LOBBY_QUEUE_NAME, QUEUE_SIZE);
+    seats_shm = attach_shm(SEATS_QUEUE_NAME, QUEUE_SIZE);
+    move_shm = attach_shm(MOVE_QUEUE_NAME, QUEUE_SIZE);
+    reserved_shm = attach_shm(MOVE_QUEUE_NAME, QUEUE_SIZE);
 }
 
-void destroy_shared() {
-    delete_shared(lobby_shared);
-    delete_shared(seats_shared);
-    delete_shared(move_shared);
-    delete_shared(reserved_shared);
+void destroy_shm() {
+    remove_shm(lobby_shm);
+    remove_shm(seats_shm);
+    remove_shm(move_shm);
+    remove_shm(reserved_shm);
 }
 
 void create_semas() {
-    lobby_sema = create_sema(LOBBY_SEMA_NAME, LOBBY_CAP, 0);
-    seats_sema = create_sema(SEATS_SEMA_NAME, SEATS_AMOUNT, 0);
+    lobby_sem = init_sem(LOBBY_SEM_NAME, LOBBY_CAPACITY, 0);
+    seats_sem = init_sem(SEATS_SEM_NAME, SEATS_NUMBER, 0);
 }
 
 void destroy_semas() {
-    destroy_sema(LOBBY_SEMA_NAME, LOBBY_CAP);
-    destroy_sema(SEATS_SEMA_NAME, SEATS_AMOUNT);
+    remove_sem(LOBBY_SEM_NAME, LOBBY_CAPACITY);
+    remove_sem(SEATS_SEM_NAME, SEATS_NUMBER);
 }
 
 int main() {
-    create_shared();
-    for (int i = 0; i < LOBBY_CAP; i++) {
-        lobby_shared[i] = (char)0;
-        reserved_shared[i] = (char)0;
+    create_shm();
+    for (int i = 0; i < LOBBY_CAPACITY; i++) {
+        lobby_shm[i] = (char)0;
+        reserved_shm[i] = (char)0;
     }
-    lobby_shared[LOBBY_CAP] = '\0';
-    reserved_shared[LOBBY_CAP] = '\0';
+    lobby_shm[LOBBY_CAPACITY] = '\0';
+    reserved_shm[LOBBY_CAPACITY] = '\0';
 
-    for (int i = 0; i < SEATS_AMOUNT; i++) {
-        seats_shared[i] = (char)0;
+    for (int i = 0; i < SEATS_NUMBER; i++) {
+        seats_shm[i] = (char)0;
     }
-    seats_shared[SEATS_AMOUNT] = '\0';
+    seats_shm[SEATS_NUMBER] = '\0';
 
     destroy_semas();
     create_semas();
 
     // spawn barbers
-    for (int i = 0; i < BARBER_AMOUNT; i++) {
+    for (int i = 0; i < BARBER_NUMBER; i++) {
         if (fork() == 0)
             execl(BARBER_EXE, BARBER_EXE, NULL);
-        // else usleep(500 * 1000);
     }
 
     // spawn clients
-    for (int i = 0; i < CLIENT_AMOUNT; i++) {
+    for (int i = 0; i < CLIENT_NUMBER; i++) {
         if (fork() == 0)
             execl(CLIENT_EXE, CLIENT_EXE, NULL);
         else
@@ -74,6 +73,6 @@ int main() {
     while (wait(NULL) > 0)
         ;
 
-    destroy_shared();
+    destroy_shm();
     destroy_semas();
 }

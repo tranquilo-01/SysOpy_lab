@@ -6,7 +6,7 @@
 #include <sys/shm.h>
 #include <sys/types.h>
 
-int make_shared(char* name, int size) {
+int get_shm(char* name, int size) {
     key_t key = ftok(getenv("HOME"), name[0]);
     if (key == -1) {
         perror("ftok");
@@ -15,28 +15,29 @@ int make_shared(char* name, int size) {
     return shmget(key, size, 0664 | IPC_CREAT);
 }
 
-char* connect_shared(char* name, int size) {
-    int shared_id = make_shared(name, size);
-    if (shared_id == -1) {
-        perror("create_shared");
+char* attach_shm(char* name, int size) {
+    int shm_id = get_shm(name, size);
+    if (shm_id == -1) {
+        perror("attach_shm");
         return NULL;
     }
-    char* shared = shmat(shared_id, NULL, 0);
 
-    if (shared == (char*)(-1)) {
+    char* shm = shmat(shm_id, NULL, 0);
+
+    if (shm == (char*)(-1)) {
         perror("connect_shared");
         return NULL;
     }
-    return shared;
+    return shm;
 }
 
-void disconnect_shared(char* shared) {
-    shmdt(shared);
+void detach_shm(char* shm) {
+    shmdt(shm);
 }
 
-void delete_shared(char* name) {
-    int shared_id = make_shared(name, 0);
-    if (shared_id == -1)
+void remove_shm(char* name) {
+    int shm_id = get_shm(name, 0);
+    if (shm_id == -1)
         return;
-    shmctl(shared_id, IPC_RMID, NULL);
+    shmctl(shm_id, IPC_RMID, NULL);
 }

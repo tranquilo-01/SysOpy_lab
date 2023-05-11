@@ -7,51 +7,51 @@
 #include "semaphores.h"
 #include "sharedmemory.h"
 
-char* lobby_shared;
-char* move_shared;
+char* lobby_shm;
+char* move_shm;
 
-Sema lobby_sema;
-Sema seats_sema;
+Semaphore lobby_sem;
+Semaphore seats_sem;
 
-void create_shared() {
-    lobby_shared = connect_shared(LOBBY_QUEUE_NAME, QUEUE_SIZE);
-    move_shared = connect_shared(MOVE_QUEUE_NAME, QUEUE_SIZE);
+void create_shm() {
+    lobby_shm = attach_shm(LOBBY_QUEUE_NAME, QUEUE_SIZE);
+    move_shm = attach_shm(MOVE_QUEUE_NAME, QUEUE_SIZE);
 }
 
-void destroy_shared() {
-    delete_shared(lobby_shared);
-    delete_shared(move_shared);
+void destroy_shm() {
+    remove_shm(lobby_shm);
+    remove_shm(move_shm);
 }
 
 void create_semas() {
-    lobby_sema = open_sema(LOBBY_SEMA_NAME, LOBBY_CAP);
-    seats_sema = open_sema(SEATS_SEMA_NAME, SEATS_AMOUNT);
+    lobby_sem = get_sem(LOBBY_SEM_NAME, LOBBY_CAPACITY);
+    seats_sem = get_sem(SEATS_SEM_NAME, SEATS_NUMBER);
 }
 
 int main() {
     srand(time(NULL) + getpid());
 
-    create_shared();
+    create_shm();
     create_semas();
 
     printf("Klient o id: %d zaczal prace!\n", getpid());
 
     int found = 0;
-    for (int i = 0; i < LOBBY_CAP; i++) {
-        if (lobby_shared[i] == (char)0) {
+    for (int i = 0; i < LOBBY_CAPACITY; i++) {
+        if (lobby_shm[i] == (char)0) {
             found = 1;
-            lobby_shared[i] = (char)(rand() % 8 + 1);
+            lobby_shm[i] = (char)(rand() % 8 + 1);
 
-            increment(lobby_sema, i);
-            wait_sema(lobby_sema, i);
+            increment_sem(lobby_sem, i);
+            wait_sem(lobby_sem, i);
 
-            int seat_id = move_shared[i];
-            lobby_shared[i] = (char)0;
-            wait_sema(seats_sema, seat_id);
+            int seat_id = move_shm[i];
+            lobby_shm[i] = (char)0;
+            wait_sem(seats_sem, seat_id);
             break;
         }
     }
-    destroy_shared();
+    destroy_shm();
 
     if (!found) {
         printf("Nie ma miejsca w poczekalni\n");

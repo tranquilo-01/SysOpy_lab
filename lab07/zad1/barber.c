@@ -4,63 +4,63 @@
 #include "semaphores.h"
 #include "sharedmemory.h"
 
-char* lobby_shared;
-char* seats_shared;
-char* move_shared;
-char* reserved_shared;
+char* lobby_shm;
+char* seats_shm;
+char* move_shm;
+char* reserved_shm;
 
-Sema lobby_sema;
-Sema seats_sema;
+Semaphore lobby_sem;
+Semaphore seats_sem;
 
-void create_shared() {
-    lobby_shared = connect_shared(LOBBY_QUEUE_NAME, QUEUE_SIZE);
-    seats_shared = connect_shared(SEATS_QUEUE_NAME, QUEUE_SIZE);
-    move_shared = connect_shared(MOVE_QUEUE_NAME, QUEUE_SIZE);
-    reserved_shared = connect_shared(MOVE_QUEUE_NAME, QUEUE_SIZE);
+void create_shm() {
+    lobby_shm = attach_shm(LOBBY_QUEUE_NAME, QUEUE_SIZE);
+    seats_shm = attach_shm(SEATS_QUEUE_NAME, QUEUE_SIZE);
+    move_shm = attach_shm(MOVE_QUEUE_NAME, QUEUE_SIZE);
+    reserved_shm = attach_shm(MOVE_QUEUE_NAME, QUEUE_SIZE);
 }
 
-void destroy_shared() {
-    delete_shared(lobby_shared);
-    delete_shared(seats_shared);
-    delete_shared(move_shared);
-    delete_shared(reserved_shared);
+void destroy_shm() {
+    remove_shm(lobby_shm);
+    remove_shm(seats_shm);
+    remove_shm(move_shm);
+    remove_shm(reserved_shm);
 }
 
 void create_semas() {
-    lobby_sema = open_sema(LOBBY_SEMA_NAME, LOBBY_CAP);
-    seats_sema = open_sema(SEATS_SEMA_NAME, SEATS_AMOUNT);
+    lobby_sem = get_sem(LOBBY_SEM_NAME, LOBBY_CAPACITY);
+    seats_sem = get_sem(SEATS_SEM_NAME, SEATS_NUMBER);
 }
 
 int not_found = 0;
 
 int main() {
-    create_shared();
+    create_shm();
     create_semas();
 
     printf("Barber o id: %d zaczal prace!\n", getpid());
 
     while (1) {
         int found = 0;
-        for (int i = 0; i < LOBBY_CAP; i++) {
-            if (lobby_shared[i] != (char)0 && reserved_shared[i] == (char)0) {
-                reserved_shared[i] = (char)1;
+        for (int i = 0; i < LOBBY_CAPACITY; i++) {
+            if (lobby_shm[i] != (char)0 && reserved_shm[i] == (char)0) {
+                reserved_shm[i] = (char)1;
                 found = 1;
-                int haircut = lobby_shared[i];
+                int haircut = lobby_shm[i];
 
-                for (int j = 0; j < SEATS_AMOUNT; j++) {
-                    if (seats_shared[j] == (char)0) {
-                        seats_shared[j] = (char)1;
+                for (int j = 0; j < SEATS_NUMBER; j++) {
+                    if (seats_shm[j] == (char)0) {
+                        seats_shm[j] = (char)1;
 
-                        increment(seats_sema, j);
-                        move_shared[i] = (char)(j);
-                        decrement(lobby_sema, i);
+                        increment_sem(seats_sem, j);
+                        move_shm[i] = (char)(j);
+                        decrement_sem(lobby_sem, i);
                         sleep(haircut);
-                        decrement(seats_sema, j);
-                        seats_shared[j] = (char)0;
+                        decrement_sem(seats_sem, j);
+                        seats_shm[j] = (char)0;
                         break;
                     }
                 }
-                reserved_shared[i] = (char)0;
+                reserved_shm[i] = (char)0;
             }
         }
         if (!found)
@@ -70,7 +70,7 @@ int main() {
         sleep(1);
     }
 
-    destroy_shared();
+    destroy_shm();
     printf("Barber o id: %d zakonczyl prace!\n", getpid());
 
     return 0;
