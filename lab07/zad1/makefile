@@ -1,4 +1,4 @@
-LIBS=sema.c shared.c
+LIBS=semaphores.c sharedmemory.c
 
 all:
 	make clean

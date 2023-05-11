@@ -1,13 +1,13 @@
-#include "lib.h"
-#include "sema.h"
-#include "shared.h"
 #include <stdio.h>
 #include <unistd.h>
+#include "common.h"
+#include "semaphores.h"
+#include "sharedmemory.h"
 
-char * lobby_shared;
-char * seats_shared;
-char * move_shared;
-char * reserved_shared;
+char* lobby_shared;
+char* seats_shared;
+char* move_shared;
+char* reserved_shared;
 
 Sema lobby_sema;
 Sema seats_sema;
@@ -42,30 +42,31 @@ int main() {
     while (1) {
         int found = 0;
         for (int i = 0; i < LOBBY_CAP; i++) {
-            if (lobby_shared[i] != (char) 0 && reserved_shared[i] == (char) 0) {
-                reserved_shared[i] = (char) 1;
+            if (lobby_shared[i] != (char)0 && reserved_shared[i] == (char)0) {
+                reserved_shared[i] = (char)1;
                 found = 1;
                 int haircut = lobby_shared[i];
-                
+
                 for (int j = 0; j < SEATS_AMOUNT; j++) {
-                    if (seats_shared[j] == (char) 0) {
-                        seats_shared[j] = (char) 1;
+                    if (seats_shared[j] == (char)0) {
+                        seats_shared[j] = (char)1;
 
                         increment(seats_sema, j);
-                        move_shared[i] = (char) (j);
+                        move_shared[i] = (char)(j);
                         decrement(lobby_sema, i);
                         sleep(haircut);
                         decrement(seats_sema, j);
-                        seats_shared[j] = (char) 0;
+                        seats_shared[j] = (char)0;
                         break;
                     }
                 }
-                reserved_shared[i] = (char) 0;
-
+                reserved_shared[i] = (char)0;
             }
         }
-        if (!found) ++not_found;
-        if (not_found >= 5) break;
+        if (!found)
+            ++not_found;
+        if (not_found >= 5)
+            break;
         sleep(1);
     }
 

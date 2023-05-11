@@ -3,6 +3,7 @@
     "stdio.h": "c",
     "stat.h": "c",
     "pthread.h": "c",
-    "threads.h": "c"
+    "threads.h": "c",
+    "unistd.h": "c"
   }
 }

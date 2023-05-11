@@ -3,12 +3,12 @@
 #include <sys/sem.h>
 #include <time.h>
 #include <unistd.h>
-#include "sema.h"
-#include "shared.h"
-#include "lib.h"
+#include "common.h"
+#include "semaphores.h"
+#include "sharedmemory.h"
 
-char * lobby_shared;
-char * move_shared;
+char* lobby_shared;
+char* move_shared;
 
 Sema lobby_sema;
 Sema seats_sema;
@@ -38,15 +38,15 @@ int main() {
 
     int found = 0;
     for (int i = 0; i < LOBBY_CAP; i++) {
-        if (lobby_shared[i] == (char) 0) {
+        if (lobby_shared[i] == (char)0) {
             found = 1;
-            lobby_shared[i] = (char) (rand() % 8 + 1);
+            lobby_shared[i] = (char)(rand() % 8 + 1);
 
             increment(lobby_sema, i);
             wait_sema(lobby_sema, i);
-            
+
             int seat_id = move_shared[i];
-            lobby_shared[i] = (char) 0;
+            lobby_shared[i] = (char)0;
             wait_sema(seats_sema, seat_id);
             break;
         }

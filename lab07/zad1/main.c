@@ -1,15 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <sys/wait.h>
-#include "sema.h"
-#include "shared.h"
-#include "lib.h"
+#include <unistd.h>
+#include "common.h"
+#include "semaphores.h"
+#include "sharedmemory.h"
 
-char * lobby_shared;
-char * seats_shared;
-char * move_shared;
-char * reserved_shared;
+char* lobby_shared;
+char* seats_shared;
+char* move_shared;
+char* reserved_shared;
 
 Sema lobby_sema;
 Sema seats_sema;
@@ -41,35 +41,38 @@ void destroy_semas() {
 int main() {
     create_shared();
     for (int i = 0; i < LOBBY_CAP; i++) {
-        lobby_shared[i] = (char) 0;
-        reserved_shared[i] = (char) 0;
+        lobby_shared[i] = (char)0;
+        reserved_shared[i] = (char)0;
     }
     lobby_shared[LOBBY_CAP] = '\0';
     reserved_shared[LOBBY_CAP] = '\0';
 
     for (int i = 0; i < SEATS_AMOUNT; i++) {
-        seats_shared[i] = (char) 0;
+        seats_shared[i] = (char)0;
     }
     seats_shared[SEATS_AMOUNT] = '\0';
-
 
     destroy_semas();
     create_semas();
 
     // spawn barbers
     for (int i = 0; i < BARBER_AMOUNT; i++) {
-        if (fork() == 0) execl(BARBER_EXE, BARBER_EXE, NULL);
+        if (fork() == 0)
+            execl(BARBER_EXE, BARBER_EXE, NULL);
         // else usleep(500 * 1000);
     }
 
-    // spawn clients 
+    // spawn clients
     for (int i = 0; i < CLIENT_AMOUNT; i++) {
-        if (fork() == 0) execl(CLIENT_EXE, CLIENT_EXE, NULL);
-        else usleep(200 * 1000);
+        if (fork() == 0)
+            execl(CLIENT_EXE, CLIENT_EXE, NULL);
+        else
+            usleep(200 * 1000);
     }
 
     // wait for everyone to stop running
-    while(wait(NULL) > 0);
+    while (wait(NULL) > 0)
+        ;
 
     destroy_shared();
     destroy_semas();
