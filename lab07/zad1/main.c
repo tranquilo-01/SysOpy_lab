@@ -6,6 +6,7 @@
 #include "semaphores.h"
 #include "sharedmemory.h"
 
+// pointers for shared memeory segments
 char* lobby_shm;
 char* seats_shm;
 char* move_shm;
@@ -39,7 +40,10 @@ void destroy_semas() {
 }
 
 int main() {
+    // creating new shared memory segments
     create_shm();
+
+    // preparing an array for each place in lobby
     for (int i = 0; i < LOBBY_CAPACITY; i++) {
         lobby_shm[i] = (char)0;
         reserved_shm[i] = (char)0;
@@ -47,32 +51,34 @@ int main() {
     lobby_shm[LOBBY_CAPACITY] = '\0';
     reserved_shm[LOBBY_CAPACITY] = '\0';
 
+    // preparing an array for each seat in barbershop
     for (int i = 0; i < SEATS_NUMBER; i++) {
         seats_shm[i] = (char)0;
     }
     seats_shm[SEATS_NUMBER] = '\0';
 
+    // creating semaphores
     destroy_semas();
     create_semas();
 
-    // spawn barbers
+    // spawning barbers
     for (int i = 0; i < BARBER_NUMBER; i++) {
         if (fork() == 0)
             execl(BARBER_EXE, BARBER_EXE, NULL);
     }
 
-    // spawn clients
+    // spawning clients
     for (int i = 0; i < CLIENT_NUMBER; i++) {
         if (fork() == 0)
             execl(CLIENT_EXE, CLIENT_EXE, NULL);
-        else
-            usleep(200 * 1000);
     }
 
-    // wait for everyone to stop running
+    // waiting for every process to finish its job
     while (wait(NULL) > 0)
         ;
 
+    // destroying used resources and quitting
     destroy_shm();
     destroy_semas();
+    return 0;
 }

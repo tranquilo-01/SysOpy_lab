@@ -31,15 +31,18 @@ void create_semas() {
 int main() {
     srand(time(NULL) + getpid());
 
+    // getting semaphores and shared memory segments created in main
     create_shm();
     create_semas();
 
-    printf("Klient o id: %d zaczal prace!\n", getpid());
+    printf("Client: %d started\n", getpid());
 
     int found = 0;
+    // looking for a free place in the lobby
     for (int i = 0; i < LOBBY_CAPACITY; i++) {
         if (lobby_shm[i] == (char)0) {
             found = 1;
+            // generating a random haircut
             lobby_shm[i] = (char)(rand() % 8 + 1);
 
             increment_sem(lobby_sem, i);
@@ -54,9 +57,9 @@ int main() {
     destroy_shm();
 
     if (!found) {
-        printf("Nie ma miejsca w poczekalni\n");
+        printf("There is no free place in the lobby, client has left\n");
     } else {
-        printf("Klient o id: %d zakonczyl prace!\n", getpid());
+        printf("Client %d finished with a fresh haicut\n", getpid());
     }
 
     return 0;
