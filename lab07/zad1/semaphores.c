@@ -42,11 +42,6 @@ Semaphore get_sem(char* name, int amount) {
     return sem_id;
 }
 
-void remove_sem(char* name, int amount) {
-    Semaphore sem_id = get_sem(name, amount);
-    semctl(sem_id, 0, IPC_RMID);
-}
-
 void increment_sem(Semaphore sem_id, int room_id) {
     struct sembuf ops = {room_id, 1, 0};
     if (semop(sem_id, &ops, 1)) {
@@ -67,4 +62,9 @@ void decrement_sem(Semaphore sem_id, int room_id) {
     if (semop(sem_id, &ops, 1)) {
         perror("decrement_sem");
     }
+}
+
+void remove_sem(char* name, int amount) {
+    Semaphore sem_id = get_sem(name, amount);
+    semctl(sem_id, 0, IPC_RMID);
 }
