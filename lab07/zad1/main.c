@@ -58,7 +58,6 @@ int main() {
     seats_shm[SEATS_NUMBER] = '\0';
 
     // creating semaphores
-    destroy_semas();
     create_semas();
 
     // spawning barbers

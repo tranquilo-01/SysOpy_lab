@@ -56,11 +56,14 @@ int main() {
                     if (seats_shm[j] == (char)0) {
                         seats_shm[j] = (char)1;
 
+                        // incrementing semaphore related to the found seat, decrementing when finished cutting
                         increment_sem(seats_sem, j);
                         // setting that the client from place i in lobby was moced to seat j in barbershop
                         move_shm[i] = (char)(j);
+                        // letting the client to move from lobby to the seat
                         decrement_sem(lobby_sem, i);
                         sleep(haircut);
+                        // letting the client go with a fresh haircut
                         decrement_sem(seats_sem, j);
                         // freeing the seat in the barbershop
                         seats_shm[j] = (char)0;

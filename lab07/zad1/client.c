@@ -18,9 +18,9 @@ void create_shm() {
     move_shm = attach_shm(MOVE_QUEUE_NAME, QUEUE_SIZE);
 }
 
-void destroy_shm() {
-    remove_shm(lobby_shm);
-    remove_shm(move_shm);
+void detach_shms() {
+    detach_shm(lobby_shm);
+    detach_shm(move_shm);
 }
 
 void create_semas() {
@@ -45,19 +45,25 @@ int main() {
             // generating a random haircut
             lobby_shm[i] = (char)(rand() % 8 + 1);
 
+            // incrementing semaphore related to the place taken in lobby
+            // and waiting till its value is set to 0
             increment_sem(lobby_sem, i);
             wait_sem(lobby_sem, i);
 
+            // moving to the seat found by the braber
             int seat_id = move_shm[i];
             lobby_shm[i] = (char)0;
+
+            // waiting for the barber to finish cutting
             wait_sem(seats_sem, seat_id);
             break;
         }
     }
-    destroy_shm();
+
+    detach_shms();
 
     if (!found) {
-        printf("There is no free place in the lobby, client has left\n");
+        printf("There is no free place in the lobby, client %d has left\n", gepid());
     } else {
         printf("Client %d finished with a fresh haicut\n", getpid());
     }
