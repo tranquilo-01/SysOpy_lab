@@ -12,21 +12,21 @@ char* reserved_shm;
 Semaphore lobby_sem;
 Semaphore seats_sem;
 
-void create_shm() {
+void attach_shms() {
     lobby_shm = attach_shm(LOBBY_QUEUE_NAME, QUEUE_SIZE);
     seats_shm = attach_shm(SEATS_QUEUE_NAME, QUEUE_SIZE);
     move_shm = attach_shm(MOVE_QUEUE_NAME, QUEUE_SIZE);
     reserved_shm = attach_shm(MOVE_QUEUE_NAME, QUEUE_SIZE);
 }
 
-void destroy_shm() {
-    remove_shm(lobby_shm);
-    remove_shm(seats_shm);
-    remove_shm(move_shm);
-    remove_shm(reserved_shm);
+void detach_shms() {
+    detach_shm(lobby_shm);
+    detach_shm(seats_shm);
+    detach_shm(move_shm);
+    detach_shm(reserved_shm);
 }
 
-void create_semas() {
+void get_semas() {
     lobby_sem = get_sem(LOBBY_SEM_NAME, LOBBY_CAPACITY);
     seats_sem = get_sem(SEATS_SEM_NAME, SEATS_NUMBER);
 }
@@ -35,8 +35,8 @@ int not_found = 0;
 
 int main() {
     // getting semaphores and shared memory segments created in main
-    create_shm();
-    create_semas();
+    attach_shms();
+    get_semas();
 
     printf("Barber: %d started\n", getpid());
 
@@ -82,7 +82,7 @@ int main() {
         sleep(1);
     }
 
-    destroy_shm();
+    detach_shms();
     printf("Barber: %d ended his job\n", getpid());
 
     return 0;

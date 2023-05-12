@@ -13,7 +13,7 @@ char* move_shm;
 Semaphore lobby_sem;
 Semaphore seats_sem;
 
-void create_shm() {
+void attach_shms() {
     lobby_shm = attach_shm(LOBBY_QUEUE_NAME, QUEUE_SIZE);
     move_shm = attach_shm(MOVE_QUEUE_NAME, QUEUE_SIZE);
 }
@@ -23,7 +23,7 @@ void detach_shms() {
     detach_shm(move_shm);
 }
 
-void create_semas() {
+void get_semas() {
     lobby_sem = get_sem(LOBBY_SEM_NAME, LOBBY_CAPACITY);
     seats_sem = get_sem(SEATS_SEM_NAME, SEATS_NUMBER);
 }
@@ -32,8 +32,8 @@ int main() {
     srand(time(NULL) + getpid());
 
     // getting semaphores and shared memory segments created in main
-    create_shm();
-    create_semas();
+    attach_shms();
+    get_semas();
 
     printf("Client: %d started\n", getpid());
 
@@ -63,7 +63,7 @@ int main() {
     detach_shms();
 
     if (!found) {
-        printf("There is no free place in the lobby, client %d has left\n", gepid());
+        printf("There is no free place in the lobby, client %d has left\n", getpid());
     } else {
         printf("Client %d finished with a fresh haicut\n", getpid());
     }
