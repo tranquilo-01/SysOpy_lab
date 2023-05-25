@@ -24,13 +24,14 @@ pthread_mutex_t elve_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t elve_waking_cond = PTHREAD_COND_INITIALIZER;
 
 pthread_mutex_t reindeer_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t reindeer_waking_cond = PTHREAD_COND_INITIALIZER;
+pthread_cond_t reindeer_delivering_cond = PTHREAD_COND_INITIALIZER;
 
-int renideersCameBack = 0;
+int reindeersCameBack = 0;
 int elvesWithProblem = 0;
 int presentsDelivered = 0;
 int elvesQueue[ELVES_NEEDED];
 bool problemsBeingFixed = false;
+bool presentsBeingDelivered = false;
 
 void* santa(void* arg) {
     // printf("Santa locked\n");
@@ -38,7 +39,7 @@ void* santa(void* arg) {
         // printf("In santa while\n");
 
         pthread_mutex_lock(&santa_mutex);
-        while (renideersCameBack != REINDEERS_NEEDED && elvesWithProblem != ELVES_NEEDED) {
+        while (reindeersCameBack != REINDEERS_NEEDED && elvesWithProblem != ELVES_NEEDED) {
             // printf("Santa sleeps\n");
             pthread_cond_wait(&santa_waking_cond, &santa_mutex);
         }
@@ -46,9 +47,11 @@ void* santa(void* arg) {
 
         printf("MIKOLAJ: budze sie\n");
 
-        pthread_mutex_lock(&elve_mutex);
-        problemsBeingFixed = true;
         if (elvesWithProblem == ELVES_NEEDED) {
+            problemsBeingFixed = true;
+
+            pthread_mutex_lock(&elve_mutex);
+
             // fixing all elves problems
             for (int i = 0; i < ELVES_NEEDED; i++) {
                 printf("MIKOLAJ: rozwiazuje problem elfa o id: %d\n", elvesQueue[i]);
@@ -59,10 +62,23 @@ void* santa(void* arg) {
                 elvesQueue[i] = 0;
             }
             elvesWithProblem = 0;
+
+            pthread_mutex_unlock(&elve_mutex);
+            problemsBeingFixed = false;
         }
+
+        if (reindeersCameBack == REINDEERS_NEEDED) {
+            pthread_mutex_lock(&reindeer_mutex);
+            presentsBeingDelivered = true;
+            pthread_cond_broadcast(&reindeer_delivering_cond);
+            sleep(PRESENT_DELIVERY_TIME);
+            presentsBeingDelivered = false;
+            reindeersCameBack = 0;
+            pthread_cond_broadcast(&reindeer_delivering_cond);
+            pthread_mutex_unlock(&reindeer_mutex);
+        }
+
         printf("MIKOLAJ: zasypiam\n");
-        pthread_mutex_unlock(&elve_mutex);
-        problemsBeingFixed = false;
     }
 }
 
@@ -100,6 +116,32 @@ void* elve(void* arg) {
     }
 }
 
+void* reindeer(void* arg) {
+    int ID = *((int*)arg);
+
+    while (true) {
+        // printf("While reindeer %d", ID);
+        pthread_mutex_lock(&reindeer_mutex);
+        while (presentsBeingDelivered) {
+            pthread_cond_wait(&reindeer_delivering_cond, &reindeer_mutex);
+        }
+        pthread_mutex_unlock(&reindeer_mutex);
+
+        sleep(REINDEER_VACATION_TIME);
+        pthread_mutex_lock(&reindeer_mutex);
+        reindeersCameBack++;
+        printf("RENIFER: czeka %d reniferow na Mikolaja, ID: %d\n", reindeersCameBack, ID);
+
+        if (reindeersCameBack == REINDEERS_NEEDED) {
+            printf("RENIFER: wybudzam Mikolaja, ID: %d\n", ID);
+            pthread_mutex_lock(&santa_mutex);
+            pthread_cond_broadcast(&santa_waking_cond);
+            pthread_mutex_unlock(&santa_mutex);
+        }
+        pthread_mutex_unlock(&reindeer_mutex);
+    }
+}
+
 int main() {
     setbuf(stdout, NULL);
     srand(time(NULL));
@@ -120,10 +162,22 @@ int main() {
         pthread_create(&elvesThreads[i], NULL, &elve, &elvesIDs[i]);
     }
 
+    // creating reindeers threads
+    int* reindeersIDs = calloc(REINDEER_NUMBER, sizeof(int));
+    pthread_t* reindeersThreads = calloc(REINDEER_NUMBER, sizeof(pthread_t));
+    for (int i = 0; i < REINDEER_NUMBER; i++) {
+        reindeersIDs[i] = i;
+        pthread_create(&reindeersThreads[i], NULL, &reindeer, &reindeersIDs[i]);
+    }
+
     pthread_join(santaThread, NULL);
 
     for (int i = 0; i < ELVES_NUMBER; i++) {
         pthread_join(elvesThreads[i], NULL);
+    }
+
+    for (int i = 0; i < REINDEER_NUMBER; i++) {
+        pthread_join(reindeersThreads[i], NULL);
     }
 
     return 0;
