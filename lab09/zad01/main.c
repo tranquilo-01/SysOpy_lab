@@ -17,20 +17,21 @@
 #define REINDEERS_NEEDED 9
 #define ELVES_NEEDED 3
 
-pthread_mutex_t santa_mutex = PTHREAD_MUTEX_INITIALIZER;
+#define PRESENTS_TO_BE_DELIVERED 3
+
 pthread_mutex_t santa_sleep_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t santa_waking_cond = PTHREAD_COND_INITIALIZER;
 
 pthread_mutex_t elvesWithProblem_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-pthread_mutex_t reindeer_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t reindeer_delivering_cond = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t reindeersCameBack_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t reindeersWait_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t reindeerWait_cond = PTHREAD_COND_INITIALIZER;
 
 int reindeersCameBack = 0;
 int elvesWithProblem = 0;
 int presentsDelivered = 0;
 int elvesQueue[ELVES_NEEDED];
-bool presentsBeingDelivered = false;
 
 void* santa(void* arg) {
     while (true) {
@@ -56,11 +57,18 @@ void* santa(void* arg) {
         }
         pthread_mutex_unlock(&elvesWithProblem_mutex);
 
+        pthread_mutex_lock(&reindeersCameBack_mutex);
         if (reindeersCameBack == REINDEERS_NEEDED) {
-            presentsBeingDelivered = true;
-            presentsBeingDelivered = false;
+            printf("MIKOLAJ: dostarczam zabawki\n");
+            sleep(PRESENT_DELIVERY_TIME);
             reindeersCameBack = 0;
+            presentsDelivered++;
+            if (presentsDelivered == PRESENTS_TO_BE_DELIVERED) {
+                break;
+            }
+            pthread_cond_broadcast(&reindeerWait_cond);
         }
+        pthread_mutex_unlock(&reindeersCameBack_mutex);
 
         printf("MIKOLAJ: zasypiam\n");
     }
@@ -75,6 +83,7 @@ void* elve(void* arg) {
         pthread_mutex_lock(&elvesWithProblem_mutex);
         if (elvesWithProblem == ELVES_NEEDED) {
             pthread_mutex_unlock(&elvesWithProblem_mutex);
+            printf("ELF:     samodzielnie rozwiazuje swoj problem, ID: %d\n", ID);
             continue;
         }
 
@@ -97,18 +106,24 @@ void* reindeer(void* arg) {
     int ID = *((int*)arg);
 
     while (true) {
-        // printf("While reindeer %d", ID);
-        while (presentsBeingDelivered) {
-            pthread_cond_wait(&reindeer_delivering_cond, &reindeer_mutex);
+        pthread_mutex_lock(&reindeersWait_mutex);
+        while (reindeersCameBack == REINDEERS_NEEDED) {
+            pthread_cond_wait(&reindeerWait_cond, &reindeersWait_mutex);
         }
+        pthread_mutex_unlock(&reindeersWait_mutex);
 
         sleep(REINDEER_VACATION_TIME);
+        pthread_mutex_lock(&reindeersCameBack_mutex);
         reindeersCameBack++;
         printf("RENIFER: czeka %d reniferow na Mikolaja, ID: %d\n", reindeersCameBack, ID);
 
+        pthread_mutex_lock(&santa_sleep_mutex);
         if (reindeersCameBack == REINDEERS_NEEDED) {
             printf("RENIFER: wybudzam Mikolaja, ID: %d\n", ID);
+            pthread_cond_broadcast(&santa_waking_cond);
         }
+        pthread_mutex_unlock(&santa_sleep_mutex);
+        pthread_mutex_unlock(&reindeersCameBack_mutex);
     }
 }
 
@@ -124,31 +139,31 @@ int main() {
     pthread_t santaThread;
     pthread_create(&santaThread, NULL, &santa, NULL);
 
-    // creating elves threads
-    int* elvesIDs = calloc(ELVES_NUMBER, sizeof(int));
-    pthread_t* elvesThreads = calloc(ELVES_NUMBER, sizeof(pthread_t));
-    for (int i = 0; i < ELVES_NUMBER; i++) {
-        elvesIDs[i] = i;
-        pthread_create(&elvesThreads[i], NULL, &elve, &elvesIDs[i]);
-    }
+    // // creating elves threads
+    // int* elvesIDs = calloc(ELVES_NUMBER, sizeof(int));
+    // pthread_t* elvesThreads = calloc(ELVES_NUMBER, sizeof(pthread_t));
+    // for (int i = 0; i < ELVES_NUMBER; i++) {
+    //     elvesIDs[i] = i;
+    //     pthread_create(&elvesThreads[i], NULL, &elve, &elvesIDs[i]);
+    // }
 
     // creating reindeers threads
-    // int* reindeersIDs = calloc(REINDEER_NUMBER, sizeof(int));
-    // pthread_t* reindeersThreads = calloc(REINDEER_NUMBER, sizeof(pthread_t));
-    // for (int i = 0; i < REINDEER_NUMBER; i++) {
-    //     reindeersIDs[i] = i;
-    //     pthread_create(&reindeersThreads[i], NULL, &reindeer, &reindeersIDs[i]);
-    // }
+    int* reindeersIDs = calloc(REINDEER_NUMBER, sizeof(int));
+    pthread_t* reindeersThreads = calloc(REINDEER_NUMBER, sizeof(pthread_t));
+    for (int i = 0; i < REINDEER_NUMBER; i++) {
+        reindeersIDs[i] = i;
+        pthread_create(&reindeersThreads[i], NULL, &reindeer, &reindeersIDs[i]);
+    }
 
     pthread_join(santaThread, NULL);
 
-    for (int i = 0; i < ELVES_NUMBER; i++) {
-        pthread_join(elvesThreads[i], NULL);
-    }
-
-    // for (int i = 0; i < REINDEER_NUMBER; i++) {
-    //     pthread_join(reindeersThreads[i], NULL);
+    // for (int i = 0; i < ELVES_NUMBER; i++) {
+    //     pthread_join(elvesThreads[i], NULL);
     // }
+
+    for (int i = 0; i < REINDEER_NUMBER; i++) {
+        pthread_join(reindeersThreads[i], NULL);
+    }
 
     return 0;
 }
