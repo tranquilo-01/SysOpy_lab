@@ -15,25 +15,25 @@
 #define TARGET_VALUE 4
 
 int global = 0;
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t santa_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t santa_waking_cond = PTHREAD_COND_INITIALIZER;
 
 void* thread_function(void* arg) {
-    pthread_mutex_lock(&mutex);
+    pthread_mutex_lock(&santa_mutex);
     while (global <= TARGET_VALUE) {
-        pthread_cond_wait(&cond, &mutex);
+        pthread_cond_wait(&santa_waking_cond, &santa_mutex);
     }
-    pthread_mutex_unlock(&mutex);
+    pthread_mutex_unlock(&santa_mutex);
 
     while (1) {
         // printf("Thread iterating\n");
-        pthread_mutex_lock(&mutex);
+        pthread_mutex_lock(&santa_mutex);
         // printf("Mutex locked in thread\n");
         global++;
-        pthread_mutex_unlock(&mutex);
+        pthread_mutex_unlock(&santa_mutex);
         // printf("Mutex unlocked in thread\n");
         printf("Thread: Incrementing global to %d\n", global);
-        pthread_cond_signal(&cond);
+        pthread_cond_signal(&santa_waking_cond);
 
         sleep(1);
     }
@@ -50,14 +50,14 @@ int main() {
 
     while (1) {
         // printf("Main iterating\n");
-        pthread_mutex_lock(&mutex);
+        pthread_mutex_lock(&santa_mutex);
         // printf("Mutex locked in main\n");
         global++;
-        pthread_mutex_unlock(&mutex);
+        pthread_mutex_unlock(&santa_mutex);
         // printf("Mutex unlocked in main\n");
         printf("Main: Incrementing global to %d\n", global);
 
-        pthread_cond_broadcast(&cond);
+        pthread_cond_broadcast(&santa_waking_cond);
         sleep(1);
     }
 
