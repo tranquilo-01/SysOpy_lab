@@ -20,6 +20,7 @@
 #define PRESENTS_TO_BE_DELIVERED 3
 
 pthread_mutex_t santa_sleep_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t isSantaAsleep_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t santa_waking_cond = PTHREAD_COND_INITIALIZER;
 
 pthread_mutex_t elvesWithProblem_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -33,6 +34,7 @@ int elvesWithProblem = 0;
 int presentsDelivered = 0;
 int elvesQueue[ELVES_NEEDED];
 
+// wywala sie przy probie obudzenia obudzonego mikolaja
 void* santa(void* arg) {
     while (true) {
         pthread_mutex_lock(&santa_sleep_mutex);
@@ -60,11 +62,12 @@ void* santa(void* arg) {
         pthread_mutex_lock(&reindeersCameBack_mutex);
         if (reindeersCameBack == REINDEERS_NEEDED) {
             printf("MIKOLAJ: dostarczam zabawki\n");
+            printf("------------------------------------------\n------------------------------------------\n");
             sleep(PRESENT_DELIVERY_TIME);
             reindeersCameBack = 0;
             presentsDelivered++;
             if (presentsDelivered == PRESENTS_TO_BE_DELIVERED) {
-                break;
+                exit(0);
             }
             pthread_cond_broadcast(&reindeerWait_cond);
         }
@@ -139,13 +142,13 @@ int main() {
     pthread_t santaThread;
     pthread_create(&santaThread, NULL, &santa, NULL);
 
-    // // creating elves threads
-    // int* elvesIDs = calloc(ELVES_NUMBER, sizeof(int));
-    // pthread_t* elvesThreads = calloc(ELVES_NUMBER, sizeof(pthread_t));
-    // for (int i = 0; i < ELVES_NUMBER; i++) {
-    //     elvesIDs[i] = i;
-    //     pthread_create(&elvesThreads[i], NULL, &elve, &elvesIDs[i]);
-    // }
+    // creating elves threads
+    int* elvesIDs = calloc(ELVES_NUMBER, sizeof(int));
+    pthread_t* elvesThreads = calloc(ELVES_NUMBER, sizeof(pthread_t));
+    for (int i = 0; i < ELVES_NUMBER; i++) {
+        elvesIDs[i] = i;
+        pthread_create(&elvesThreads[i], NULL, &elve, &elvesIDs[i]);
+    }
 
     // creating reindeers threads
     int* reindeersIDs = calloc(REINDEER_NUMBER, sizeof(int));
@@ -157,9 +160,9 @@ int main() {
 
     pthread_join(santaThread, NULL);
 
-    // for (int i = 0; i < ELVES_NUMBER; i++) {
-    //     pthread_join(elvesThreads[i], NULL);
-    // }
+    for (int i = 0; i < ELVES_NUMBER; i++) {
+        pthread_join(elvesThreads[i], NULL);
+    }
 
     for (int i = 0; i < REINDEER_NUMBER; i++) {
         pthread_join(reindeersThreads[i], NULL);
