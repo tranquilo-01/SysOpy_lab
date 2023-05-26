@@ -21,7 +21,7 @@ int main() {
         perror("Error connecting to server");
 
     char buff[20];
-    int to_send = sprintf(buff, "HELLO From: %zu", getpid());
+    int to_send = sprintf(buff, "HELLO From: %u", getpid());
 
     if(write(fd, buff, to_send+1) == -1) {
         perror("Error sending msg to server");
