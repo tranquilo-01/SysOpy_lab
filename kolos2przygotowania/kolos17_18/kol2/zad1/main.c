@@ -10,7 +10,7 @@
 #include <unistd.h>
 
 #define FILE_NAME "common.txt"
-#define SEM_NAME "my_kol_sem"
+#define SEM_NAME "/my_kol_sem"
 
 void print_sem_value(sem_t* sem) {
     int sem_val;
@@ -27,6 +27,10 @@ int main(int argc, char** args) {
     /************************************
     Utworz semafor posixowy. Ustaw jego wartosc na 1
     *************************************/
+    sem_t* sem_id = sem_open(SEM_NAME, O_CREAT, 0666, 1);
+    if (sem_id == SEM_FAILED) {
+        perror("sem_open");
+    }
 
     print_sem_value(sem_id);
 
@@ -35,11 +39,11 @@ int main(int argc, char** args) {
     int parentLoopCounter = atoi(args[1]);
     int childLoopCounter = atoi(args[2]);
 
-    char buf[20];
+    char buf[128];
     pid_t childPid;
     int max_sleep_time = atoi(args[3]);
 
-    if (childPid = fork()) {
+    if ((childPid = fork())) {
         int status = 0;
         srand((unsigned)time(0));
 
@@ -52,6 +56,7 @@ int main(int argc, char** args) {
             /******************************************
             Sekcja krytyczna. Zabezpiecz dostep semaforem
             ******************************************/
+            sem_wait(sem_id);
 
             print_sem_value(sem_id);
 
@@ -64,6 +69,7 @@ int main(int argc, char** args) {
             /****************************************************
             Koniec sekcji krytycznej
             ****************************************************/
+            sem_post(sem_id);
 
             print_sem_value(sem_id);
         }
@@ -79,6 +85,7 @@ int main(int argc, char** args) {
             /******************************************
             Sekcja krytyczna. Zabezpiecz dostep semaforem
             ******************************************/
+            sem_wait(sem_id);
 
             print_sem_value(sem_id);
 
@@ -91,6 +98,7 @@ int main(int argc, char** args) {
             /****************************************************
             Koniec sekcji krytycznej
             ****************************************************/
+            sem_post(sem_id);
 
             print_sem_value(sem_id);
         }
@@ -100,6 +108,8 @@ int main(int argc, char** args) {
     /***************************************
     Posprzataj semafor
     ***************************************/
+    sem_close(sem_id);
+    sem_unlink(SEM_NAME);
     close(fd);
     return 0;
 }

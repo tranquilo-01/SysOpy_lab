@@ -51,6 +51,33 @@ semctl(sem_id, 0, IPC_RMID)
 
 ### POSIX
 
+#### Semafory
+
+- utworz semafor o wartosci 1
+
+```c
+sem_t* sem_id = sem_open(SEM_NAME, O_CREAT, 0666, 1);
+```
+
+- dekrementacja semafora:
+
+```c
+sem_wait(sem_id);
+```
+
+- inkrementacja semafora:
+
+```c
+sem_post(sem_id);
+```
+
+- zamkniecie i usuniecie semafora:
+
+```c
+sem_close(sem_id);
+sem_unlink(SEM_NAME);
+```
+
 #### Shared memory
 
 - Utworz nowy lub otworz segment pamieci wspoldzielonej:
