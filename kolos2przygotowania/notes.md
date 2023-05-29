@@ -6,7 +6,53 @@
 
 ### POSIX
 
-## 7. NFEOFWO
+---
+
+## 7. Shared memory, semafory
+
+### POSIX
+
+#### Shared memory
+
+- Utworz nowy lub otworz segment pamieci wspoldzielonej:
+
+```c
+int fd = shm_open(SHM_NAME, O_RDWR | O_CREAT, 0666);
+```
+
+Pierwszy argument to sciezka identyfikujaca, drugi to flagi, a trzeci to uprawnienia
+
+- Nastepnie trzeba okreslic rozmiar dla utworzonego segmentu:
+
+```c
+ftruncate(fd, MAX_SIZE);
+```
+
+- A potem podpiac do pamieci adresowej procesu:
+
+```c
+void* shm_ptr = mmap(NULL, MAX_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+```
+
+- zapis do obszaru pamieci wspolnej:
+
+```c
+sprintf(shm_ptr, argv[1]);
+```
+
+- odpiecie pamieci wspolnej od pamieci adresowej procesu:
+
+```c
+munmap(shm_ptr, MAX_SIZE);
+```
+
+- oznaczenie pamieci wspolnej do usuniecia, co stanie sie po jej odpieciu od wszystkich procesow
+
+```c
+shm_unlink(SHM_NAME);
+```
+
+---
 
 ## 8. Watki - podstawy
 
