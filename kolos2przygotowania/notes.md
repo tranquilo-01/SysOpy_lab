@@ -10,6 +10,45 @@
 
 ## 7. Shared memory, semafory
 
+### System V
+
+#### Semafory
+
+- utworz klucz i semafor
+
+```c
+key_t sem_key = ftok(getenv("HOME"), 'A');
+
+int sem_id = semget(sem_key, 1, IPC_CREAT | 0666);
+```
+
+- ustaw semafor na 1
+
+```c
+semctl(sem_id, 0, SETVAL, 1)
+```
+
+- zabezpieczenie sekcji semaforem przez jego dekrementacje z 1 do 0
+
+```c
+struct sembuf sem_op;
+sem_op.sem_num = 0;  // semaphore index
+sem_op.sem_op = -1;  // decrement semaphore value by 1
+sem_op.sem_flg = 0;  // no special flags
+```
+
+- koniec sekcji, ponowna inkrementacja semafora
+
+```c
+sem_op.sem_op = 1;
+```
+
+- usuniecie semafora
+
+```c
+semctl(sem_id, 0, IPC_RMID)
+```
+
 ### POSIX
 
 #### Shared memory
