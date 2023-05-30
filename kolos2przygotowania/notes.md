@@ -4,6 +4,47 @@
 
 ### System V
 
+- utworz klucz (standardowo jak w systemie v):
+
+```c
+key_t key = ftok(KEY, 'A');
+```
+
+- stworz nowa / otworz istniejaca kolejke:
+
+```c
+int q = msgget(key, IPC_CREAT | 0666);
+```
+
+- struktura na wiadomosc(do edycji przez programiste) i przypisanie wartosci:
+
+```c
+struct msgbuf {
+    long mtype; /* typ komunikatu   */
+    int mint;   /* tresc komunikatu */
+};
+
+struct msgbuf message = {1, atoi(argv[1])};
+```
+
+- wyslanie wiadomosci:
+
+```c
+msgsnd(q, &message, sizeof(message.mint), IPC_NOWAIT);
+```
+
+- odczytanie wiadomosci:
+
+```c
+msgrcv(q, &message, sizeof(message.mint), 0, IPC_NOWAIT);
+```
+
+- usuniecie kolejki:
+
+```c
+msgctl(q, IPC_RMID, NULL);
+```
+
 ### POSIX
 
 ---
